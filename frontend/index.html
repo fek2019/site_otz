@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -241,6 +241,51 @@
 
     .btn-add-review:hover::after { opacity: 1; }
     .btn-add-review:active { transform: translateY(0); }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .btn-header {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 44px;
+      padding: 0 18px;
+      border: 2px solid var(--border);
+      border-radius: 99px;
+      background: var(--surface);
+      color: var(--text-muted);
+      text-decoration: none;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn-header:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-profile {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(108,99,255,.35);
+    }
+
+    .btn-profile:hover {
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(108,99,255,.45);
+    }
 
     /* ============================================================
        HERO SECTION
@@ -1091,6 +1136,7 @@
     @media (max-width: 768px) {
       .header-inner { padding: 0 16px; gap: 12px; }
       .logo-text    { display: none; }
+      .header-actions { gap: 8px; }
       .modal-header { padding: 20px 20px 16px; }
       .modal-body   { padding: 20px; }
       .org-summary  { flex-direction: column; text-align: center; }
@@ -1100,7 +1146,8 @@
 
     @media (max-width: 480px) {
       .toolbar { flex-direction: column; align-items: flex-start; }
-      .btn-add-review span { display: none; }
+      .header-actions .btn-text { display: none; }
+      .btn-add-review, .btn-header { width: 44px; justify-content: center; padding: 0; }
     }
   </style>
 </head>
@@ -1122,10 +1169,20 @@
         <i class="fa-solid fa-magnifying-glass"></i>
       </div>
 
-      <button class="btn-add-review" id="openAddReview">
-        <i class="fa-solid fa-plus"></i>
-        <span>Добавить отзыв</span>
-      </button>
+      <div class="header-actions">
+        <button class="btn-add-review" id="openAddReview">
+          <i class="fa-solid fa-plus"></i>
+          <span class="btn-text">Добавить отзыв</span>
+        </button>
+        <button class="btn-header" id="openAddOrg">
+          <i class="fa-solid fa-building-circle-plus"></i>
+          <span class="btn-text">Добавить организацию</span>
+        </button>
+        <a class="btn-header btn-profile" id="profileLink" href="/login">
+          <i class="fa-solid fa-user"></i>
+          <span class="btn-text">Личный кабинет</span>
+        </a>
+      </div>
     </div>
   </header>
 
@@ -1279,794 +1336,512 @@
     </div>
   </div>
 
+  <!-- ══════════════ MODAL: ADD ORGANIZATION ══════════════ -->
+  <div class="modal-overlay" id="addOrgModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addOrgTitle">
+      <div class="modal-header">
+        <div class="modal-title-block">
+          <div class="modal-title" id="addOrgTitle">🏢 Добавить организацию</div>
+          <div class="modal-subtitle">Категорию указываете сами в свободной форме</div>
+        </div>
+        <button class="modal-close" id="closeAddOrg" aria-label="Закрыть"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="addOrgForm" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="orgCreateName"><i class="fa-solid fa-building"></i> Название</label>
+            <input class="form-control" type="text" id="orgCreateName" placeholder="Например: Школа №12" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="orgCreateCategory"><i class="fa-solid fa-tag"></i> Категория</label>
+            <input class="form-control" type="text" id="orgCreateCategory" placeholder="Например: Школа, Клиника, Салон красоты" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="orgCreateDescription"><i class="fa-solid fa-align-left"></i> Описание</label>
+            <textarea class="form-control" id="orgCreateDescription" placeholder="Коротко опишите организацию"></textarea>
+          </div>
+          <button type="submit" class="btn-submit">
+            <i class="fa-solid fa-circle-plus"></i> Добавить
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════════ TOAST ══════════════ -->
   <div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i> <span id="toastMsg"></span></div>
 
   <!-- ══════════════ JAVASCRIPT ══════════════ -->
   <script>
-  (() => {
-    'use strict';
+(() => {
+  const ITEMS_PER_PAGE = 6;
 
-    /* ─────────────────────────────────────────
-       CONSTANTS
-    ───────────────────────────────────────── */
-    const ITEMS_PER_PAGE = 6;
+  const KNOWN_CATEGORY_META = {
+    'клиники': { icon: '🏥', color: '#6C63FF', bg: '#EAE8FF' },
+    'автосервисы': { icon: '🛠️', color: '#FF6584', bg: '#FFE5EB' },
+    'салоны красоты': { icon: '💅', color: '#43D9AD', bg: '#DFF9F2' },
+    'рестораны': { icon: '🍽️', color: '#FF9A3C', bg: '#FFF3E5' },
+    'магазины': { icon: '🛒', color: '#5B8DEF', bg: '#E7EFFE' },
+    'другое': { icon: '🏢', color: '#7B7F9E', bg: '#F0F1F7' }
+  };
+  const DEFAULT_CATEGORY_META = { icon: '🏢', color: '#7B7F9E', bg: '#F0F1F7' };
 
-    /* ─────────────────────────────────────────
-       CATEGORY META (icon + colors)
-    ───────────────────────────────────────── */
-   const CAT_META = {
-  'Клиники':        { icon: '🏥', color: '#6C63FF', bg: '#EAE8FF' },
-  'Автосервисы':    { icon: '🔧', color: '#FF6584', bg: '#FFE5EB' },
-  'Салоны красоты': { icon: '💅', color: '#43D9AD', bg: '#DFF9F2' },
-  'Рестораны':      { icon: '🍽️', color: '#FF9A3C', bg: '#FFF3E5' },
-  'Магазины':       { icon: '🛒', color: '#5B8DEF', bg: '#E7EFFE' },
-  'Другое':         { icon: '🏢', color: '#7B7F9E', bg: '#F0F1F7' }, // ← добавить
-};
+  const state = {
+    organizations: [],
+    activeCategory: 'Все',
+    searchQuery: '',
+    sortMode: 'default',
+    currentPage: 1
+  };
 
+  const els = {
+    particles: document.getElementById('particles'),
+    searchInput: document.getElementById('searchInput'),
+    sortSelect: document.getElementById('sortSelect'),
+    categories: document.getElementById('categories'),
+    sectionTitle: document.getElementById('sectionTitle'),
+    countBadge: document.getElementById('countBadge'),
+    cardsGrid: document.getElementById('cardsGrid'),
+    pagination: document.getElementById('pagination'),
+    statOrgs: document.getElementById('statOrgs'),
+    statReviews: document.getElementById('statReviews'),
+    statCategories: document.getElementById('statCategories'),
+    toast: document.getElementById('toast'),
+    toastMsg: document.getElementById('toastMsg'),
+    openAddReview: document.getElementById('openAddReview'),
+    openAddOrg: document.getElementById('openAddOrg'),
+    addOrgModal: document.getElementById('addOrgModal'),
+    closeAddOrg: document.getElementById('closeAddOrg'),
+    addOrgForm: document.getElementById('addOrgForm'),
+    orgCreateName: document.getElementById('orgCreateName'),
+    orgCreateCategory: document.getElementById('orgCreateCategory'),
+    orgCreateDescription: document.getElementById('orgCreateDescription'),
+    profileLink: document.getElementById('profileLink')
+  };
 
-    /* Avatar colors for reviewers */
-    const AVATAR_COLORS = ['#6C63FF','#FF6584','#43D9AD','#FF9A3C','#5B8DEF','#A259FF','#F24E1E'];
+  function getCategoryMeta(category) {
+    const key = (category || 'Другое').trim().toLowerCase();
+    return KNOWN_CATEGORY_META[key] || DEFAULT_CATEGORY_META;
+  }
 
-    /* ─────────────────────────────────────────
-       DEFAULT DATA
-    ───────────────────────────────────────── */
-    const DEFAULT_ORGANIZATIONS = [
-      {
-        id: 1, name: 'Клиника Здоровье', category: 'Клиники',
-        previewText: 'Отличные врачи, современное оборудование и приятный персонал.',
-        reviews: [
-          { id: 1, author: 'Анна К.',    date: '12.01.2025', rating: 5, text: 'Отличные врачи! Быстро поставили диагноз, все объяснили. Буду обращаться снова.' },
-          { id: 2, author: 'Михаил Р.',  date: '05.02.2025', rating: 3, text: 'Долго ждал приёма — около часа. Врач хороший, но запись не соответствовала времени.' },
-          { id: 3, author: 'Светлана В.', date: '20.02.2025', rating: 5, text: 'Прекрасная клиника! Чистота, вежливость, профессионализм. Всем рекомендую.' },
-        ],
-      },
-      {
-        id: 2, name: 'Стоматология на Ленина', category: 'Клиники',
-        previewText: 'Современные технологии и безболезненное лечение.',
-        reviews: [
-          { id: 1, author: 'Дмитрий С.', date: '08.01.2025', rating: 5, text: 'Лечили зуб без боли! Доктор Ирина Сергеевна — мастер своего дела.' },
-          { id: 2, author: 'Ольга П.',   date: '14.03.2025', rating: 4, text: 'Цены немного выше среднего, но качество соответствует. Ребёнку не было страшно.' },
-        ],
-      },
-      {
-        id: 3, name: 'Автосервис Умелец', category: 'Автосервисы',
-        previewText: 'Починили быстро и качественно, приятно удивили сроками.',
-        reviews: [
-          { id: 1, author: 'Алексей Г.', date: '03.03.2025', rating: 4, text: 'Починили быстро — за день заменили подвеску. Объяснили что и почему.' },
-          { id: 2, author: 'Ирина М.',   date: '17.03.2025', rating: 3, text: 'Дороговато по сравнению с другими, но работа сделана аккуратно.' },
-          { id: 3, author: 'Сергей Д.',  date: '25.03.2025', rating: 5, text: 'Отличный сервис! Машина работает как новая. Вернусь снова.' },
-        ],
-      },
-      {
-        id: 4, name: 'АвтоМастер Плюс', category: 'Автосервисы',
-        previewText: 'Диагностика бесплатно при любом ремонте.',
-        reviews: [
-          { id: 1, author: 'Павел Н.',   date: '01.02.2025', rating: 4, text: 'Сделали бесплатную диагностику и нашли реальную проблему. Честные ребята.' },
-          { id: 2, author: 'Наталья Ф.', date: '22.02.2025', rating: 2, text: 'Пришлось ждать 3 дня, хотя обещали за один. Больше не приеду.' },
-        ],
-      },
-      {
-        id: 5, name: 'Бьюти-студия Мария', category: 'Салоны красоты',
-        previewText: 'Лучший мастер! Маникюр держится уже третью неделю.',
-        reviews: [
-          { id: 1, author: 'Екатерина Л.', date: '10.01.2025', rating: 5, text: 'Лучший мастер маникюра в городе! Держится уже три недели. Рекомендую.' },
-          { id: 2, author: 'Юлия К.',      date: '19.02.2025', rating: 5, text: 'Очень уютно, приятная атмосфера. Мастер Мария — просто волшебница!' },
-          { id: 3, author: 'Вера С.',       date: '01.03.2025', rating: 4, text: 'Хорошая студия, но запись за 2 недели — это многовато.' },
-        ],
-      },
-      {
-        id: 6, name: 'Салон Glamour', category: 'Салоны красоты',
-        previewText: 'Окрашивание волос профессиональными красками L\'Oréal.',
-        reviews: [
-          { id: 1, author: 'Марина Ж.', date: '14.02.2025', rating: 5, text: 'Покрасили волосы — результат потрясающий! Цвет именно тот, что хотела.' },
-          { id: 2, author: 'Алина Т.',  date: '28.02.2025', rating: 3, text: 'Средне. Ожидала большего за такую цену.' },
-        ],
-      },
-      {
-        id: 7, name: 'Ресторан Уют', category: 'Рестораны',
-        previewText: 'Уютная атмосфера, вкусная кухня и приятные цены.',
-        reviews: [
-          { id: 1, author: 'Антон Б.',  date: '20.01.2025', rating: 5, text: 'Отмечали день рождения — всё прошло отлично! Вкусно, красиво, персонал внимательный.' },
-          { id: 2, author: 'Людмила Ш.', date: '05.02.2025', rating: 4, text: 'Хорошее место для семейного ужина. Детское меню понравилось ребёнку.' },
-          { id: 3, author: 'Роман К.',  date: '12.03.2025', rating: 5, text: 'Лучший стейк в городе! Буду возвращаться снова и снова.' },
-        ],
-      },
-      {
-        id: 8, name: 'Кафе Восток', category: 'Рестораны',
-        previewText: 'Настоящая восточная кухня в самом центре города.',
-        reviews: [
-          { id: 1, author: 'Тимур А.',  date: '07.02.2025', rating: 5, text: 'Плов как дома у мамы! Порции большие, цены адекватные.' },
-          { id: 2, author: 'Наталья Б.', date: '15.03.2025', rating: 4, text: 'Хорошая кухня, но шумновато в выходные.' },
-        ],
-      },
-      {
-        id: 9, name: 'Супермаркет Близко', category: 'Магазины',
-        previewText: 'Всё необходимое рядом с домом, свежие продукты каждый день.',
-        reviews: [
-          { id: 1, author: 'Галина П.',  date: '25.01.2025', rating: 4, text: 'Удобно расположен, свежие овощи и фрукты. Касс побольше бы.' },
-          { id: 2, author: 'Виктор Н.',  date: '10.02.2025', rating: 3, text: 'Цены чуть выше среднего, но выбор хороший.' },
-        ],
-      },
-      {
-        id: 10, name: 'Электроника MaxTech', category: 'Магазины',
-        previewText: 'Широкий выбор техники с гарантией и консультацией.',
-        reviews: [
-          { id: 1, author: 'Иван Р.',    date: '14.01.2025', rating: 5, text: 'Купил ноутбук — помогли выбрать, всё объяснили. Отличный сервис!' },
-          { id: 2, author: 'Марина С.',  date: '28.01.2025', rating: 4, text: 'Хороший магазин, но очередь на кассе бывает.' },
-          { id: 3, author: 'Денис Ф.',   date: '19.03.2025', rating: 5, text: 'Сервисный центр при магазине — очень удобно. Починили телефон за 2 часа.' },
-        ],
-      },
-    ];
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
 
-    /* ─────────────────────────────────────────
-       STATE
-    ───────────────────────────────────────── */
-    let state = {
-      organizations: [],   // loaded from localStorage or defaults
-      activeCategory: 'Все',
-      searchQuery: '',
-      sortMode: 'default',
-      currentPage: 1,
-      pickedRating: 0,
+  function normalizeOrg(row) {
+    return {
+      id: row.id,
+      name: row.name,
+      category: row.category || 'Другое',
+      previewText: row.description || 'Описание пока не добавлено.',
+      rating: Number(row.avg_rating) || 0,
+      reviewsCount: Number(row.reviews_count) || 0
     };
+  }
 
-    /* ─────────────────────────────────────────
-       LOCALSTORAGE HELPERS
-    ───────────────────────────────────────── */
-    /**
-     * Сохраняем организации (с их отзывами) в localStorage.
-     */
-    function saveToStorage() {
-      localStorage.setItem('nr_organizations', JSON.stringify(state.organizations));
+  async function loadOrganizations() {
+    try {
+      const res = await fetch('/api/organizations', { credentials: 'include' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      state.organizations = Array.isArray(data) ? data.map(normalizeOrg) : [];
+      state.currentPage = 1;
+      render();
+      updateHeroStats();
+    } catch (err) {
+      console.error('Failed to load organizations', err);
+      state.organizations = [];
+      render();
+      updateHeroStats();
+      showToast('Не удалось загрузить организации. Проверьте сервер Flask.', true);
+    }
+  }
+
+  function getCategories() {
+    return ['Все', ...new Set(state.organizations.map(o => o.category))];
+  }
+
+  function getFilteredOrgs() {
+    let list = [...state.organizations];
+
+    if (state.activeCategory !== 'Все') {
+      list = list.filter(org => org.category === state.activeCategory);
     }
 
-    /**
-     * Загружаем из localStorage или используем дефолтные данные.
-     * При загрузке пересчитываем rating и reviewsCount.
-     */
-    function loadFromStorage() {
-      const raw = localStorage.getItem('nr_organizations');
-      if (raw) {
-        state.organizations = JSON.parse(raw);
-      } else {
-        // Клонируем дефолтные данные и рассчитываем рейтинги
-        state.organizations = DEFAULT_ORGANIZATIONS.map(org => ({
-          ...org,
-          reviews: [...org.reviews],
-        }));
-      }
-      // Всегда пересчитываем рейтинг из отзывов
-      state.organizations.forEach(recalcOrg);
+    if (state.searchQuery) {
+      const query = state.searchQuery.toLowerCase();
+      list = list.filter(org => org.name.toLowerCase().includes(query));
     }
 
-    /**
-     * Пересчитывает средний рейтинг и кол-во отзывов для организации.
-     */
-    function recalcOrg(org) {
-      org.reviewsCount = org.reviews.length;
-      if (org.reviews.length === 0) {
-        org.rating = 0;
-        return;
-      }
-      const sum = org.reviews.reduce((acc, r) => acc + r.rating, 0);
-      org.rating = Math.round((sum / org.reviews.length) * 10) / 10;
+    switch (state.sortMode) {
+      case 'rating-desc':
+        list.sort((a, b) => b.rating - a.rating);
+        break;
+      case 'rating-asc':
+        list.sort((a, b) => a.rating - b.rating);
+        break;
+      case 'reviews-desc':
+        list.sort((a, b) => b.reviewsCount - a.reviewsCount);
+        break;
+      default:
+        list.sort((a, b) => a.id - b.id);
+        break;
     }
 
-    /* ─────────────────────────────────────────
-       FILTERING & SORTING
-    ───────────────────────────────────────── */
-    function getFilteredOrgs() {
-      let list = [...state.organizations];
+    return list;
+  }
 
-      // Filter by category
-      if (state.activeCategory !== 'Все') {
-        list = list.filter(o => o.category === state.activeCategory);
-      }
+  function renderCategories() {
+    const allCategories = getCategories();
 
-      // Filter by search
-      if (state.searchQuery) {
-        const q = state.searchQuery.toLowerCase();
-        list = list.filter(o => o.name.toLowerCase().includes(q));
-      }
+    els.categories.innerHTML = allCategories
+      .map(category => {
+        const isAll = category === 'Все';
+        const meta = getCategoryMeta(category);
 
-      // Sort
-      switch (state.sortMode) {
-        case 'rating-desc':  list.sort((a, b) => b.rating - a.rating); break;
-        case 'rating-asc':   list.sort((a, b) => a.rating - b.rating); break;
-        case 'reviews-desc': list.sort((a, b) => b.reviewsCount - a.reviewsCount); break;
-      }
-
-      return list;
-    }
-
-    /* ─────────────────────────────────────────
-       STARS RENDER HELPER
-    ───────────────────────────────────────── */
-    /**
-     * Возвращает HTML строку со звёздами для данного рейтинга.
-     */
-    function starsHTML(rating, size = 14) {
-      let html = '';
-      for (let i = 1; i <= 5; i++) {
-        if (rating >= i)       html += `<span class="star filled" style="font-size:${size}px">★</span>`;
-        else if (rating >= i - .5) html += `<span class="star half"   style="font-size:${size}px">★</span>`;
-        else                   html += `<span class="star empty"  style="font-size:${size}px">★</span>`;
-      }
-      return html;
-    }
-
-    /* ─────────────────────────────────────────
-       RENDER CATEGORIES
-    ───────────────────────────────────────── */
-    function renderCategories() {
-      const wrap = document.getElementById('categories');
-      const cats = ['Все', ...Object.keys(CAT_META)];
-      wrap.innerHTML = cats.map(cat => {
-        const isAll = cat === 'Все';
-        const icon  = isAll ? '🌟' : CAT_META[cat].icon;
         return `
-          <button class="cat-btn ${state.activeCategory === cat ? 'active' : ''}"
-                  data-category="${cat}">
-            <span>${icon}</span> <span>${cat}</span>
-          </button>`;
-      }).join('');
+          <button class="cat-btn ${state.activeCategory === category ? 'active' : ''}" data-cat="${escapeHtml(category)}">
+            <i>${isAll ? '🌟' : meta.icon}</i>
+            <span>${escapeHtml(category)}</span>
+          </button>
+        `;
+      })
+      .join('');
 
-      wrap.querySelectorAll('.cat-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          state.activeCategory = btn.dataset.category;
-          state.currentPage = 1;
-          render();
-        });
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.activeCategory = btn.dataset.cat;
+        state.currentPage = 1;
+        render();
       });
+    });
+  }
+
+  function renderCards() {
+    const filtered = getFilteredOrgs();
+    const total = filtered.length;
+    const pages = Math.max(1, Math.ceil(total / ITEMS_PER_PAGE));
+
+    if (state.currentPage > pages) {
+      state.currentPage = pages;
     }
 
-    /* ─────────────────────────────────────────
-       RENDER CARDS
-    ───────────────────────────────────────── */
-    function renderCards() {
-      const grid      = document.getElementById('cardsGrid');
-      const filtered  = getFilteredOrgs();
-      const total     = filtered.length;
-      const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+    const start = (state.currentPage - 1) * ITEMS_PER_PAGE;
+    const pageItems = filtered.slice(start, start + ITEMS_PER_PAGE);
 
-      // Clamp current page
-      if (state.currentPage > totalPages && totalPages > 0) state.currentPage = totalPages;
+    els.sectionTitle.textContent = state.activeCategory === 'Все'
+      ? 'Все организации'
+      : state.activeCategory;
+    els.countBadge.textContent = `${total} ${pluralOrg(total)}`;
 
-      // Paginate
-      const start = (state.currentPage - 1) * ITEMS_PER_PAGE;
-      const page  = filtered.slice(start, start + ITEMS_PER_PAGE);
+    if (pageItems.length === 0) {
+      els.cardsGrid.innerHTML = `
+        <div class="empty-state">
+          <span class="empty-icon">🔎</span>
+          <h3>Ничего не найдено</h3>
+          <p>Попробуйте изменить категорию, поиск или сортировку</p>
+        </div>
+      `;
+      return;
+    }
 
-      // Update section title & count badge
-      document.getElementById('sectionTitle').textContent =
-        state.activeCategory === 'Все' ? 'Все организации' : state.activeCategory;
-      document.getElementById('countBadge').textContent =
-        `${total} ${pluralOrg(total)}`;
-
-      if (page.length === 0) {
-        grid.innerHTML = `
-          <div class="empty-state">
-            <span class="empty-icon">🔍</span>
-            <h3>Ничего не найдено</h3>
-            <p>Попробуйте изменить запрос или выбрать другую категорию</p>
-          </div>`;
-        return;
-      }
-
-      grid.innerHTML = page.map((org, idx) => {
-        const meta = CAT_META[org.category] || {};
+    els.cardsGrid.innerHTML = pageItems
+      .map((org, idx) => {
+        const meta = getCategoryMeta(org.category);
         return `
-          <div class="card" data-id="${org.id}" style="animation-delay:${idx * .07}s" data-cat="${org.category}">
+          <div class="card" data-id="${org.id}" style="animation-delay:${idx * 0.07}s" data-cat="${escapeHtml(org.category)}">
             <div class="card-top">
-              <div class="card-icon" style="background:${meta.bg};color:${meta.color}">
-                ${meta.icon}
-              </div>
+              <div class="card-icon" style="background:${meta.bg}; color:${meta.color}">${meta.icon}</div>
               <div class="card-title-block">
-                <div class="card-name">${org.name}</div>
-                <div class="card-category" style="background:${meta.bg};color:${meta.color}">
-                  ${meta.icon} ${org.category}
-                </div>
+                <div class="card-name">${escapeHtml(org.name)}</div>
+                <div class="card-category">${meta.icon} ${escapeHtml(org.category)}</div>
               </div>
             </div>
 
             <div class="card-rating">
-              <div class="rating-num">${org.rating.toFixed(1)}</div>
+              <div class="rating-num">${org.rating > 0 ? org.rating.toFixed(1) : '—'}</div>
               <div class="rating-right">
-                <div class="stars">${starsHTML(org.rating)}</div>
+                <div class="stars">${starsHTML(org.rating, 14)}</div>
                 <div class="rating-count">${org.reviewsCount} ${pluralReview(org.reviewsCount)}</div>
               </div>
             </div>
 
-            <div class="card-preview">${org.previewText}</div>
+            <div class="card-preview">${escapeHtml(org.previewText)}</div>
 
             <div class="card-footer">
               <div class="reviews-count">
-                <i class="fa-regular fa-comment"></i>
+                <i class="fa-regular fa-comment-dots"></i>
                 ${org.reviewsCount} ${pluralReview(org.reviewsCount)}
               </div>
               <button class="btn-read" data-id="${org.id}">
                 Читать <i class="fa-solid fa-arrow-right"></i>
               </button>
             </div>
-          </div>`;
-      }).join('');
-
-      // Bind read-reviews buttons
-      grid.querySelectorAll('.btn-read').forEach(btn => {
-        btn.addEventListener('click', () => openReviewsModal(+btn.dataset.id));
-      });
-    }
-
-    /* ─────────────────────────────────────────
-       RENDER PAGINATION
-    ───────────────────────────────────────── */
-    function renderPagination() {
-      const wrap    = document.getElementById('pagination');
-      const total   = getFilteredOrgs().length;
-      const pages   = Math.ceil(total / ITEMS_PER_PAGE);
-
-      if (pages <= 1) { wrap.innerHTML = ''; return; }
-
-      let html = `
-        <button class="page-btn" id="pgPrev" ${state.currentPage === 1 ? 'disabled' : ''}>
-          <i class="fa-solid fa-chevron-left"></i>
-        </button>`;
-
-      for (let p = 1; p <= pages; p++) {
-        html += `<button class="page-btn ${p === state.currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
-      }
-
-      html += `
-        <button class="page-btn" id="pgNext" ${state.currentPage === pages ? 'disabled' : ''}>
-          <i class="fa-solid fa-chevron-right"></i>
-        </button>`;
-
-      wrap.innerHTML = html;
-
-      document.getElementById('pgPrev').addEventListener('click', () => {
-        if (state.currentPage > 1) { state.currentPage--; render(); scrollToTop(); }
-      });
-      document.getElementById('pgNext').addEventListener('click', () => {
-        if (state.currentPage < pages) { state.currentPage++; render(); scrollToTop(); }
-      });
-      wrap.querySelectorAll('[data-page]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          state.currentPage = +btn.dataset.page;
-          render();
-          scrollToTop();
-        });
-      });
-    }
-
-    function scrollToTop() {
-      document.querySelector('main').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    /* ─────────────────────────────────────────
-       HERO STATS (animated counter)
-    ───────────────────────────────────────── */
-    function animateCounter(el, target, duration = 1200) {
-      const start  = performance.now();
-      const update = (now) => {
-        const progress = Math.min((now - start) / duration, 1);
-        const ease = 1 - Math.pow(1 - progress, 3);
-        el.textContent = Math.round(ease * target);
-        if (progress < 1) requestAnimationFrame(update);
-        else el.textContent = target;
-      };
-      requestAnimationFrame(update);
-    }
-
-    function updateHeroStats() {
-      const totalOrgs    = state.organizations.length;
-      const totalReviews = state.organizations.reduce((a, o) => a + o.reviewsCount, 0);
-      const totalCats    = Object.keys(CAT_META).length;
-      animateCounter(document.getElementById('statOrgs'),       totalOrgs);
-      animateCounter(document.getElementById('statReviews'),    totalReviews);
-      animateCounter(document.getElementById('statCategories'), totalCats);
-    }
-
-    /* ─────────────────────────────────────────
-       MAIN RENDER
-    ───────────────────────────────────────── */
-    function render() {
-      renderCategories();
-      renderCards();
-      renderPagination();
-    }
-
-    /* ─────────────────────────────────────────
-       MODAL HELPERS
-    ───────────────────────────────────────── */
-    function openModal(id) {
-      const el = document.getElementById(id);
-      el.classList.add('open');
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closeModal(id) {
-      const el = document.getElementById(id);
-      el.classList.remove('open');
-      document.body.style.overflow = '';
-    }
-
-    // Close on overlay click
-    document.querySelectorAll('.modal-overlay').forEach(overlay => {
-      overlay.addEventListener('click', e => {
-        if (e.target === overlay) closeModal(overlay.id);
-      });
-    });
-
-    // Escape key
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') {
-        document.querySelectorAll('.modal-overlay.open').forEach(o => closeModal(o.id));
-      }
-    });
-
-    /* ─────────────────────────────────────────
-       ADD REVIEW MODAL
-    ───────────────────────────────────────── */
-    /* ─────────────────────────────────────────
-   ADD REVIEW MODAL — autocomplete + new org
-───────────────────────────────────────── */
-
-const orgNameInput    = document.getElementById('orgNameInput');
-const orgIdHidden     = document.getElementById('orgIdHidden');
-const autocompleteList = document.getElementById('autocompleteList');
-const newOrgBlock     = document.getElementById('newOrgBlock');
-const newOrgCategory  = document.getElementById('newOrgCategory');
-
-// Open modal
-document.getElementById('openAddReview').addEventListener('click', () => {
-  resetOrgField();
-  openModal('addReviewModal');
-});
-
-// Close modal
-document.getElementById('closeAddReview').addEventListener('click', () => {
-  closeModal('addReviewModal');
-});
-
-/** Сбрасывает поле организации в начальное состояние */
-function resetOrgField() {
-  orgNameInput.value  = '';
-  orgIdHidden.value   = '';
-  autocompleteList.classList.remove('open');
-  autocompleteList.innerHTML = '';
-  newOrgBlock.style.display  = 'none';
-  newOrgCategory.value = '';
-}
-
-/** Показывает/скрывает блок "новая организация" */
-function toggleNewOrgBlock(show) {
-  newOrgBlock.style.display = show ? 'block' : 'none';
-  if (!show) newOrgCategory.value = '';
-}
-
-/** Строит выпадающий список автодополнения */
-function buildAutocomplete(query) {
-  autocompleteList.innerHTML = '';
-
-  if (!query) {
-    autocompleteList.classList.remove('open');
-    toggleNewOrgBlock(false);
-    return;
-  }
-
-  const q       = query.toLowerCase();
-  const matches = state.organizations.filter(o =>
-    o.name.toLowerCase().includes(q)
-  );
-
-  // Существующие совпадения
-  matches.forEach(org => {
-    const meta = CAT_META[org.category] || { icon: '🏢' };
-    const item = document.createElement('div');
-    item.className = 'ac-item';
-    item.innerHTML = `
-      <span class="ac-item-icon">${meta.icon}</span>
-      <div class="ac-item-info">
-        <div class="ac-item-name">${highlightMatch(org.name, query)}</div>
-        <div class="ac-item-cat">${org.category} · ${org.reviewsCount} ${pluralReview(org.reviewsCount)}</div>
-      </div>`;
-    item.addEventListener('mousedown', () => selectExistingOrg(org));
-    autocompleteList.appendChild(item);
-  });
-
-  // Опция "добавить новую"
-  const addNew = document.createElement('div');
-  addNew.className = 'ac-item';
-  addNew.innerHTML = `
-    <span class="ac-item-icon">➕</span>
-    <div class="ac-item-info">
-      <div class="ac-item-new">Добавить «${query}» как новую организацию</div>
-    </div>`;
-  addNew.addEventListener('mousedown', () => selectNewOrg(query));
-  autocompleteList.appendChild(addNew);
-
-  autocompleteList.classList.add('open');
-}
-
-/** Подсвечивает совпадение в строке */
-function highlightMatch(text, query) {
-  const idx = text.toLowerCase().indexOf(query.toLowerCase());
-  if (idx === -1) return text;
-  return (
-    text.slice(0, idx) +
-    `<mark style="background:var(--primary-light);color:var(--primary);border-radius:3px;padding:0 2px">${text.slice(idx, idx + query.length)}</mark>` +
-    text.slice(idx + query.length)
-  );
-}
-
-/** Выбрать существующую организацию из списка */
-function selectExistingOrg(org) {
-  orgNameInput.value  = org.name;
-  orgIdHidden.value   = org.id;
-  autocompleteList.classList.remove('open');
-  toggleNewOrgBlock(false);
-}
-
-/** Выбрать режим "новая организация" */
-function selectNewOrg(name) {
-  orgNameInput.value = name;
-  orgIdHidden.value  = 'new';           // сигнал — создать новую
-  autocompleteList.classList.remove('open');
-  toggleNewOrgBlock(true);
-}
-
-// Слушаем ввод в поле организации
-orgNameInput.addEventListener('input', () => {
-  orgIdHidden.value = '';               // сброс выбора при редактировании
-  toggleNewOrgBlock(false);
-  buildAutocomplete(orgNameInput.value.trim());
-});
-
-// Закрываем список при потере фокуса
-orgNameInput.addEventListener('blur', () => {
-  setTimeout(() => autocompleteList.classList.remove('open'), 150);
-});
-
-// Открываем список при фокусе если есть текст
-orgNameInput.addEventListener('focus', () => {
-  if (orgNameInput.value.trim()) buildAutocomplete(orgNameInput.value.trim());
-});
-
-/* ── Star picker ── */
-const starPicker = document.getElementById('starPicker');
-starPicker.querySelectorAll('.star-pick').forEach(star => {
-  star.addEventListener('mouseover', () => highlightStars(+star.dataset.val));
-  star.addEventListener('mouseout',  () => highlightStars(state.pickedRating));
-  star.addEventListener('click',     () => {
-    state.pickedRating = +star.dataset.val;
-    highlightStars(state.pickedRating);
-  });
-});
-
-function highlightStars(val) {
-  starPicker.querySelectorAll('.star-pick').forEach(s => {
-    s.classList.toggle('lit', +s.dataset.val <= val);
-  });
-}
-
-/* ── Form submit ── */
-document.getElementById('reviewForm').addEventListener('submit', e => {
-  e.preventDefault();
-
-  const orgName  = orgNameInput.value.trim();
-  const orgIdVal = orgIdHidden.value;
-  const author   = document.getElementById('authorName').value.trim();
-  const text     = document.getElementById('reviewText').value.trim();
-  const rating   = state.pickedRating;
-
-  // Валидация
-  if (!orgName)   return showToast('Введите название организации', true);
-  if (!orgIdVal)  return showToast('Выберите организацию из списка или добавьте новую', true);
-  if (!author)    return showToast('Введите ваше имя', true);
-  if (!rating)    return showToast('Поставьте оценку', true);
-  if (!text)      return showToast('Напишите текст отзыва', true);
-
-  let org;
-
-  if (orgIdVal === 'new') {
-    // ── Создаём новую организацию ──
-    const category = newOrgCategory.value;
-    if (!category) return showToast('Выберите категорию организации', true);
-
-    org = {
-      id:          Date.now(),
-      name:        orgName,
-      category,
-      previewText: text,       // первый отзыв становится превью
-      reviews:     [],
-    };
-    state.organizations.push(org);
-
-  } else {
-    // ── Добавляем к существующей ──
-    org = state.organizations.find(o => o.id === +orgIdVal);
-    if (!org) return showToast('Организация не найдена', true);
-  }
-
-  // Добавляем отзыв
-  org.reviews.push({
-    id:     Date.now() + 1,
-    author,
-    date:   formatDate(new Date()),
-    text,
-    rating,
-  });
-
-  recalcOrg(org);
-  saveToStorage();
-  render();
-  updateHeroStats();
-
-  // Сброс формы
-  e.target.reset();
-  state.pickedRating = 0;
-  highlightStars(0);
-  resetOrgField();
-
-  closeModal('addReviewModal');
-  showToast(orgIdVal === 'new'
-    ? `«${org.name}» добавлена в каталог!`
-    : `Отзыв о «${org.name}» добавлен!`
-  );
-});
-
-
-    /* ─────────────────────────────────────────
-       REVIEWS MODAL
-    ───────────────────────────────────────── */
-    function openReviewsModal(orgId) {
-      const org  = state.organizations.find(o => o.id === orgId);
-      if (!org) return;
-
-      const meta = CAT_META[org.category] || {};
-
-      document.getElementById('reviewsModalTitle').textContent = `Отзывы об организации`;
-      document.getElementById('reviewsModalSubtitle').textContent = org.name;
-
-      // Summary
-      document.getElementById('orgSummary').innerHTML = `
-        <div class="org-summary-icon" style="background:${meta.bg}; font-size:28px">${meta.icon}</div>
-        <div class="org-summary-info">
-          <div class="org-summary-name">${org.name}</div>
-          <div class="org-summary-cat">${org.category}</div>
-          <div class="org-summary-rating">
-            <div class="org-summary-num">${org.rating.toFixed(1)}</div>
-            <div>
-              <div class="stars">${starsHTML(org.rating, 20)}</div>
-              <div style="font-size:13px;color:var(--text-muted)">${org.reviewsCount} ${pluralReview(org.reviewsCount)}</div>
-            </div>
           </div>
-        </div>`;
+        `;
+      })
+      .join('');
 
-      // Reviews list
-      if (org.reviews.length === 0) {
-        document.getElementById('reviewsList').innerHTML =
-          `<div class="empty-state"><span class="empty-icon">📝</span>
-           <h3>Пока нет отзывов</h3><p>Будьте первым!</p></div>`;
-      } else {
-        document.getElementById('reviewsList').innerHTML =
-          [...org.reviews].reverse().map((r, i) => {
-            const avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
-            const initials    = r.author.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-            return `
-              <div class="review-item" style="animation-delay:${i * .08}s">
-                <div class="review-header">
-                  <div class="review-author-block">
-                    <div class="review-avatar" style="background:${avatarColor}">${initials}</div>
-                    <div>
-                      <div class="review-author">${r.author}</div>
-                      <div class="review-date">${r.date}</div>
-                    </div>
-                  </div>
-                  <div class="stars">${starsHTML(r.rating, 16)}</div>
-                </div>
-                <div class="review-text">${r.text}</div>
-              </div>`;
-          }).join('');
-      }
+    document.querySelectorAll('.btn-read').forEach(btn => {
+      btn.addEventListener('click', () => {
+        window.location.href = `/organization/${btn.dataset.id}`;
+      });
+    });
+  }
 
-      openModal('reviewsModal');
+  function renderPagination() {
+    const total = getFilteredOrgs().length;
+    const pages = Math.max(1, Math.ceil(total / ITEMS_PER_PAGE));
+
+    if (pages <= 1) {
+      els.pagination.innerHTML = '';
+      return;
     }
 
-    document.getElementById('closeReviews').addEventListener('click', () => closeModal('reviewsModal'));
+    const buttons = [];
+    buttons.push(`<button class="page-btn" id="pgPrev" ${state.currentPage === 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-left"></i></button>`);
 
-    /* ─────────────────────────────────────────
-       SEARCH
-    ───────────────────────────────────────── */
-    document.getElementById('searchInput').addEventListener('input', e => {
-      state.searchQuery  = e.target.value.trim();
-      state.currentPage  = 1;
-      render();
+    for (let page = 1; page <= pages; page += 1) {
+      buttons.push(`<button class="page-btn ${page === state.currentPage ? 'active' : ''}" data-page="${page}">${page}</button>`);
+    }
+
+    buttons.push(`<button class="page-btn" id="pgNext" ${state.currentPage === pages ? 'disabled' : ''}><i class="fa-solid fa-chevron-right"></i></button>`);
+    els.pagination.innerHTML = buttons.join('');
+
+    document.querySelectorAll('.page-btn[data-page]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.currentPage = Number(btn.dataset.page);
+        renderCards();
+        renderPagination();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
     });
 
-    /* ─────────────────────────────────────────
-       SORT
-    ───────────────────────────────────────── */
-    document.getElementById('sortSelect').addEventListener('change', e => {
-      state.sortMode    = e.target.value;
+    const prevBtn = document.getElementById('pgPrev');
+    const nextBtn = document.getElementById('pgNext');
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (state.currentPage > 1) {
+          state.currentPage -= 1;
+          renderCards();
+          renderPagination();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        if (state.currentPage < pages) {
+          state.currentPage += 1;
+          renderCards();
+          renderPagination();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
+    }
+  }
+
+  function updateHeroStats() {
+    const orgCount = state.organizations.length;
+    const reviewsCount = state.organizations.reduce((sum, org) => sum + org.reviewsCount, 0);
+    const categoriesCount = new Set(state.organizations.map(org => org.category)).size;
+
+    animateNumber(els.statOrgs, orgCount);
+    animateNumber(els.statReviews, reviewsCount);
+    animateNumber(els.statCategories, categoriesCount);
+  }
+
+  function render() {
+    renderCategories();
+    renderCards();
+    renderPagination();
+  }
+
+  function starsHTML(rating, size = 14) {
+    const rounded = Math.round(rating || 0);
+    return Array.from({ length: 5 }, (_, i) =>
+      `<span class="star ${i < rounded ? 'filled' : 'empty'}" style="font-size:${size}px">★</span>`
+    ).join('');
+  }
+
+  function pluralOrg(n) {
+    const r = n % 10;
+    if (n % 100 >= 11 && n % 100 <= 19) return 'организаций';
+    if (r === 1) return 'организация';
+    if (r >= 2 && r <= 4) return 'организации';
+    return 'организаций';
+  }
+
+  function pluralReview(n) {
+    const r = n % 10;
+    if (n % 100 >= 11 && n % 100 <= 19) return 'отзывов';
+    if (r === 1) return 'отзыв';
+    if (r >= 2 && r <= 4) return 'отзыва';
+    return 'отзывов';
+  }
+
+  function animateNumber(el, target) {
+    const start = Number(el.textContent) || 0;
+    const duration = 500;
+    const startedAt = performance.now();
+
+    function tick(now) {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      el.textContent = Math.round(start + (target - start) * progress);
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  function createParticles() {
+    const colors = ['#6C63FF', '#FF6584', '#43D9AD', '#FF9A3C', '#5B8DEF'];
+
+    for (let i = 0; i < 18; i += 1) {
+      const el = document.createElement('div');
+      const size = Math.random() * 12 + 5;
+      el.className = 'particle';
+      el.style.cssText = `
+        width: ${size}px;
+        height: ${size}px;
+        left: ${Math.random() * 100}%;
+        background: ${colors[Math.floor(Math.random() * colors.length)]};
+        animation-duration: ${Math.random() * 18 + 12}s;
+        animation-delay: ${Math.random() * 15}s;
+      `;
+      els.particles.appendChild(el);
+    }
+  }
+
+  let toastTimer;
+  function showToast(msg, isError = false) {
+    const icon = els.toast.querySelector('i');
+    els.toastMsg.textContent = msg;
+    icon.className = isError ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check';
+    icon.style.color = isError ? '#FF6584' : '#43D9AD';
+    els.toast.classList.add('show');
+
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => els.toast.classList.remove('show'), 3000);
+  }
+
+  async function syncProfileLink() {
+    if (!els.profileLink) return;
+    els.profileLink.setAttribute('href', '/login');
+
+    try {
+      const res = await fetch('/api/me', { credentials: 'include' });
+      if (!res.ok) return;
+
+      const data = await res.json();
+      if (data?.admin) {
+        els.profileLink.setAttribute('href', '/admin');
+        return;
+      }
+
+      if (data?.user) {
+        els.profileLink.setAttribute('href', '/profile');
+      }
+    } catch {
+      els.profileLink.setAttribute('href', '/login');
+    }
+  }
+
+  function openAddOrgModal() {
+    els.addOrgModal.classList.add('open');
+  }
+
+  function closeAddOrgModal() {
+    els.addOrgModal.classList.remove('open');
+  }
+
+  async function createOrganization(event) {
+    event.preventDefault();
+
+    const name = els.orgCreateName.value.trim();
+    const category = els.orgCreateCategory.value.trim();
+    const description = els.orgCreateDescription.value.trim();
+
+    if (!name || !category) {
+      showToast('Укажите название и категорию организации', true);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/organization', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, category, description })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast(data.error || 'Не удалось добавить организацию', true);
+        return;
+      }
+
+      closeAddOrgModal();
+      els.addOrgForm.reset();
+      await loadOrganizations();
+      showToast('Организация добавлена');
+    } catch (err) {
+      console.error('Create organization failed', err);
+      showToast('Ошибка сети при добавлении организации', true);
+    }
+  }
+
+  function bindEvents() {
+    els.searchInput.addEventListener('input', e => {
+      state.searchQuery = e.target.value.trim();
       state.currentPage = 1;
       render();
     });
 
-    /* ─────────────────────────────────────────
-       TOAST NOTIFICATION
-    ───────────────────────────────────────── */
-    let toastTimer;
-    function showToast(msg, isError = false) {
-      const toast = document.getElementById('toast');
-      const icon  = toast.querySelector('i');
-      document.getElementById('toastMsg').textContent = msg;
-      icon.className = isError ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check';
-      icon.style.color = isError ? '#FF6584' : '#43D9AD';
-      toast.classList.add('show');
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
-    }
-
-    /* ─────────────────────────────────────────
-       PARTICLES GENERATOR
-    ───────────────────────────────────────── */
-    function createParticles() {
-      const container = document.getElementById('particles');
-      const colors    = ['#6C63FF', '#FF6584', '#43D9AD', '#FF9A3C', '#5B8DEF'];
-
-      for (let i = 0; i < 18; i++) {
-        const el        = document.createElement('div');
-        const size      = Math.random() * 12 + 5;
-        el.className    = 'particle';
-        el.style.cssText = `
-          width:  ${size}px;
-          height: ${size}px;
-          left:   ${Math.random() * 100}%;
-          background: ${colors[Math.floor(Math.random() * colors.length)]};
-          animation-duration:  ${Math.random() * 18 + 12}s;
-          animation-delay:     ${Math.random() * 15}s;
-        `;
-        container.appendChild(el);
-      }
-    }
-
-    /* ─────────────────────────────────────────
-       UTILS
-    ───────────────────────────────────────── */
-    function formatDate(d) {
-      return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
-
-    function pluralOrg(n) {
-      const r = n % 10;
-      if (n % 100 >= 11 && n % 100 <= 19) return 'организаций';
-      if (r === 1) return 'организация';
-      if (r >= 2 && r <= 4) return 'организации';
-      return 'организаций';
-    }
-
-    function pluralReview(n) {
-      const r = n % 10;
-      if (n % 100 >= 11 && n % 100 <= 19) return 'отзывов';
-      if (r === 1) return 'отзыв';
-      if (r >= 2 && r <= 4) return 'отзыва';
-      return 'отзывов';
-    }
-
-    /* ─────────────────────────────────────────
-       INIT
-    ───────────────────────────────────────── */
-    function init() {
-      createParticles();
-      loadFromStorage();
+    els.sortSelect.addEventListener('change', e => {
+      state.sortMode = e.target.value;
+      state.currentPage = 1;
       render();
-      updateHeroStats();
-    }
+    });
 
-    init();
+    els.openAddReview.addEventListener('click', () => {
+      showToast('Выберите организацию и оставьте отзыв на её странице');
+      document.getElementById('cardsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
 
-  })();
-  </script>
+    els.openAddOrg.addEventListener('click', openAddOrgModal);
+    els.closeAddOrg.addEventListener('click', closeAddOrgModal);
+    els.addOrgForm.addEventListener('submit', createOrganization);
+
+    els.addOrgModal.addEventListener('click', e => {
+      if (e.target === els.addOrgModal) closeAddOrgModal();
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && els.addOrgModal.classList.contains('open')) {
+        closeAddOrgModal();
+      }
+    });
+  }
+
+  async function init() {
+    createParticles();
+    bindEvents();
+    await syncProfileLink();
+    await loadOrganizations();
+  }
+
+  init();
+})();
+</script>
 </body>
 </html>
+

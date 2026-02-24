@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Личный кабинет — Народный рейтинг</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #6C63FF;
+      --primary-light: #EAE8FF;
+      --primary-dark: #5A52D5;
+      --accent: #FF6584;
+      --gold: #FFB800;
+      --bg: #F7F8FC;
+      --surface: #fff;
+      --text: #1A1A2E;
+      --muted: #7B7F9E;
+      --border: #EAECF4;
+      --shadow-sm: 0 2px 8px rgba(108,99,255,.08);
+      --shadow-lg: 0 20px 60px rgba(108,99,255,.18);
+      --radius: 16px;
+      --transition: .28s cubic-bezier(.4,0,.2,1);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse 80% 50% at 20% -10%, rgba(108,99,255,.10) 0%, transparent 60%);
+    }
+
+    header {
+      background: rgba(255,255,255,.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-inner {
+      max-width: 940px;
+      margin: 0 auto;
+      padding: 0 24px;
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      font-size: 16px;
+    }
+
+    .logo-text {
+      font-size: 17px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 99px;
+      border: 2px solid var(--border);
+      color: var(--muted);
+      background: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all var(--transition);
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .nav-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .container {
+      max-width: 940px;
+      margin: 0 auto;
+      padding: 36px 24px 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .profile-card {
+      padding: 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .avatar {
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 27px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .profile-info h2 {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .profile-info p {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .profile-stat {
+      margin-left: auto;
+      text-align: center;
+    }
+
+    .stat-num {
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .section-title {
+      margin: 22px 0 14px;
+      font-size: 19px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .section-title i { color: var(--primary); }
+
+    .credentials-card {
+      padding: 22px;
+      margin-bottom: 8px;
+    }
+
+    .credentials-note {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .msg {
+      display: none;
+      margin-bottom: 12px;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .msg.show { display: block; }
+    .msg.ok { background: #E7FBF4; color: #23956F; }
+    .msg.err { background: #FFE5E9; color: #D63050; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+
+    .form-label {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .form-control {
+      width: 100%;
+      height: 44px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 0 14px;
+      font-family: inherit;
+      font-size: 14px;
+      background: #fff;
+      outline: none;
+      transition: all var(--transition);
+    }
+
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(108,99,255,.12);
+    }
+
+    .btn-save {
+      height: 46px;
+      border: none;
+      border-radius: 10px;
+      padding: 0 20px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(108,99,255,.35);
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .btn-save:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 28px rgba(108,99,255,.44);
+    }
+
+    .review-item {
+      position: relative;
+      overflow: hidden;
+      padding: 22px;
+      margin-bottom: 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+
+    .review-item:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .review-org {
+      color: var(--primary);
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .review-org:hover { text-decoration: underline; }
+
+    .review-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .stars { display: flex; gap: 2px; }
+    .star { font-size: 15px; color: #D1D5E8; }
+    .star.filled { color: var(--gold); }
+    .review-date { font-size: 12px; color: var(--muted); }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 999px;
+      padding: 4px 9px;
+    }
+
+    .status-visible {
+      background: #E8FAF2;
+      color: #23956F;
+    }
+
+    .status-hidden {
+      background: #FFE8EC;
+      color: #D63050;
+    }
+
+    .review-text {
+      font-size: 14px;
+      line-height: 1.6;
+      margin-right: 48px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .btn-delete {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 8px;
+      background: #FFF0F3;
+      color: var(--accent);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all var(--transition);
+    }
+
+    .btn-delete:hover {
+      background: var(--accent);
+      color: #fff;
+      transform: scale(1.08);
+    }
+
+    .empty {
+      text-align: center;
+      padding: 46px 18px;
+      color: var(--muted);
+      font-size: 15px;
+      border-radius: var(--radius);
+      border: 1px dashed #D7DCEE;
+      background: #FBFCFF;
+    }
+
+    .empty i {
+      display: block;
+      font-size: 42px;
+      margin-bottom: 12px;
+      opacity: .45;
+    }
+
+    .empty a {
+      color: var(--primary);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .empty a:hover { text-decoration: underline; }
+
+    @media (max-width: 800px) {
+      .profile-card {
+        flex-wrap: wrap;
+      }
+
+      .profile-stat {
+        margin-left: 0;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <a class="logo" href="/">
+        <div class="logo-icon"><i class="fa-solid fa-star"></i></div>
+        <span class="logo-text">Народный рейтинг</span>
+      </a>
+      <div class="header-actions">
+        <a class="nav-btn" href="/"><i class="fa-solid fa-house"></i> На главную</a>
+        <button class="nav-btn" id="btnLogout" type="button">
+          <i class="fa-solid fa-right-from-bracket"></i> Выйти
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="card profile-card">
+      <div class="avatar" id="userAvatar">?</div>
+      <div class="profile-info">
+        <h2 id="userName">Загрузка...</h2>
+        <p id="userEmail"></p>
+        <p id="userDate"></p>
+      </div>
+      <div class="profile-stat">
+        <div class="stat-num" id="reviewsCount">0</div>
+        <div class="stat-label">отзывов</div>
+      </div>
+    </div>
+
+    <div class="section-title"><i class="fa-solid fa-key"></i> Настройки входа</div>
+    <div class="card credentials-card">
+      <p class="credentials-note">
+        Можно менять логин (email) и пароль. Для подтверждения изменений введите текущий пароль.
+      </p>
+      <div class="msg" id="credMsg"></div>
+      <form id="credentialsForm" novalidate>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="currentPassword">Текущий пароль</label>
+            <input class="form-control" type="password" id="currentPassword" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newEmail">Новый логин (email)</label>
+            <input class="form-control" type="email" id="newEmail" placeholder="you@example.com" />
+          </div>
+          <div class="form-group full">
+            <label class="form-label" for="newPassword">Новый пароль (опционально)</label>
+            <input class="form-control" type="password" id="newPassword" placeholder="Минимум 6 символов" />
+          </div>
+          <div class="form-group full">
+            <button class="btn-save" type="submit">
+              <i class="fa-solid fa-floppy-disk"></i> Сохранить изменения
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="section-title"><i class="fa-solid fa-comment-dots"></i> Мои отзывы</div>
+    <div class="msg" id="reviewsMsg"></div>
+    <div id="reviewsList"></div>
+  </div>
+
+  <script>
+    const els = {
+      userAvatar: document.getElementById('userAvatar'),
+      userName: document.getElementById('userName'),
+      userEmail: document.getElementById('userEmail'),
+      userDate: document.getElementById('userDate'),
+      reviewsCount: document.getElementById('reviewsCount'),
+      reviewsList: document.getElementById('reviewsList'),
+      credentialsForm: document.getElementById('credentialsForm'),
+      currentPassword: document.getElementById('currentPassword'),
+      newEmail: document.getElementById('newEmail'),
+      newPassword: document.getElementById('newPassword'),
+      credMsg: document.getElementById('credMsg'),
+      reviewsMsg: document.getElementById('reviewsMsg'),
+      btnLogout: document.getElementById('btnLogout'),
+    };
+
+    async function requestJson(url, options = {}) {
+      const response = await fetch(url, {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        ...options,
+      });
+
+      let data = {};
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
+
+      return { response, data };
+    }
+
+    function showMessage(el, text, isError = false) {
+      el.textContent = text;
+      el.className = `msg show ${isError ? 'err' : 'ok'}`;
+    }
+
+    function hideMessage(el) {
+      el.className = 'msg';
+      el.textContent = '';
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function formatDate(raw) {
+      if (!raw) return '—';
+      const date = new Date(raw);
+      if (Number.isNaN(date.getTime())) return raw;
+      return date.toLocaleDateString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+    }
+
+    function starsHTML(rating) {
+      return Array.from({ length: 5 }, (_, index) =>
+        `<span class="star ${index < Number(rating) ? 'filled' : ''}">★</span>`
+      ).join('');
+    }
+
+    function setProfileCard(profile) {
+      const initials = (profile.username || '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(word => word[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase() || '?';
+
+      els.userAvatar.textContent = initials;
+      els.userName.textContent = profile.username || 'Пользователь';
+      els.userEmail.textContent = profile.email || '';
+      els.userDate.textContent = `Зарегистрирован: ${formatDate(profile.created_at)}`;
+      els.reviewsCount.textContent = String((profile.reviews || []).length);
+      els.newEmail.placeholder = profile.email || 'you@example.com';
+    }
+
+    function renderReviews(reviews) {
+      hideMessage(els.reviewsMsg);
+
+      if (!reviews.length) {
+        els.reviewsList.innerHTML = `
+          <div class="empty">
+            <i class="fa-regular fa-comment"></i>
+            <p>У вас пока нет отзывов.<br />
+            <a href="/">Найдите организацию</a> и поделитесь опытом.</p>
+          </div>`;
+        return;
+      }
+
+      els.reviewsList.innerHTML = reviews.map(review => `
+        <div class="review-item" id="review-${review.id}">
+          <a class="review-org" href="/organization/${review.organization_id}">
+            <i class="fa-solid fa-building"></i> ${escapeHtml(review.organization_name)}
+          </a>
+          <div class="review-meta">
+            <div class="stars">${starsHTML(review.rating)}</div>
+            <span class="review-date">${formatDate(review.created_at)}</span>
+            <span class="status-badge ${review.is_hidden ? 'status-hidden' : 'status-visible'}">
+              ${review.is_hidden ? 'Скрыт модерацией' : 'Опубликован'}
+            </span>
+          </div>
+          <div class="review-text">${escapeHtml(review.text)}</div>
+          <button class="btn-delete" type="button" onclick="deleteReview(${review.id})" title="Удалить отзыв">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    async function loadProfile() {
+      const { response, data } = await requestJson('/api/profile', { method: 'GET' });
+
+      if (response.status === 401 || response.status === 403) {
+        window.location.href = '/login';
+        return;
+      }
+
+      if (!response.ok) {
+        showMessage(els.reviewsMsg, data.error || 'Не удалось загрузить профиль', true);
+        return;
+      }
+
+      setProfileCard(data);
+      renderReviews(data.reviews || []);
+    }
+
+    async function onSubmitCredentials(event) {
+      event.preventDefault();
+      hideMessage(els.credMsg);
+
+      const payload = {
+        current_password: els.currentPassword.value,
+        new_email: els.newEmail.value.trim(),
+        new_password: els.newPassword.value.trim(),
+      };
+
+      const { response, data } = await requestJson('/api/profile/credentials', {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        window.location.href = '/login';
+        return;
+      }
+
+      if (!response.ok) {
+        showMessage(els.credMsg, data.error || 'Не удалось обновить данные', true);
+        return;
+      }
+
+      els.currentPassword.value = '';
+      els.newPassword.value = '';
+      els.newEmail.value = '';
+      if (data.email) {
+        els.userEmail.textContent = data.email;
+      }
+
+      showMessage(els.credMsg, data.message || 'Данные обновлены');
+      await loadProfile();
+    }
+
+    window.deleteReview = async function deleteReview(reviewId) {
+      hideMessage(els.reviewsMsg);
+
+      if (!confirm('Удалить этот отзыв?')) return;
+
+      const { response, data } = await requestJson(`/api/review/${reviewId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        window.location.href = '/login';
+        return;
+      }
+
+      if (!response.ok) {
+        showMessage(els.reviewsMsg, data.error || 'Не удалось удалить отзыв', true);
+        return;
+      }
+
+      await loadProfile();
+    };
+
+    async function logout() {
+      await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+      window.location.href = '/';
+    }
+
+    function init() {
+      els.credentialsForm.addEventListener('submit', onSubmitCredentials);
+      els.btnLogout.addEventListener('click', logout);
+      loadProfile();
+    }
+
+    window.addEventListener('pageshow', event => {
+      if (event.persisted) {
+        loadProfile();
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,968 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Админ-панель — Народный рейтинг</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #6C63FF;
+      --primary-dark: #5A52D5;
+      --accent: #FF6584;
+      --green: #19b37d;
+      --bg: #F7F8FC;
+      --surface: #fff;
+      --text: #1A1A2E;
+      --muted: #7B7F9E;
+      --border: #EAECF4;
+      --radius: 16px;
+      --shadow: 0 10px 28px rgba(108,99,255,.12);
+      --transition: .25s ease;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255,255,255,.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 20px;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+    }
+
+    .logo-text {
+      font-weight: 800;
+      font-size: 18px;
+      color: var(--text);
+    }
+
+    .head-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 2px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .btn.primary {
+      border-color: transparent;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      box-shadow: 0 6px 20px rgba(108,99,255,.25);
+    }
+
+    .container {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 28px 20px 70px;
+      display: grid;
+      gap: 22px;
+    }
+
+    .title-row h1 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .title-row p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .stat-title {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .section h2 {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .form-group {
+      display: grid;
+      gap: 6px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    input, textarea, select {
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      background: #fff;
+      transition: var(--transition);
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(108,99,255,.12);
+    }
+
+    textarea { min-height: 92px; resize: vertical; }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .org-list, .review-list, .users-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+      max-height: 460px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .org-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .org-name {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #eef0ff;
+      color: var(--primary);
+    }
+
+    .badge.hidden {
+      background: #ffe9ef;
+      color: #d43a64;
+    }
+
+    .badge.visible {
+      background: #e7f8f1;
+      color: var(--green);
+    }
+
+    .meta {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .review-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .review-text {
+      font-size: 14px;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .reply-box {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .chart-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .chart-row {
+      display: grid;
+      grid-template-columns: 160px 1fr auto;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .bar {
+      height: 10px;
+      border-radius: 99px;
+      background: #edf0ff;
+      overflow: hidden;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+    }
+
+    .msg {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .msg.show { display: block; }
+    .msg.error { background: #ffe9ef; color: #d43a64; }
+    .msg.ok { background: #e7f8f1; color: #179c6e; }
+
+    @media (max-width: 1024px) {
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid-2 { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .chart-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <a class="logo" href="/">
+        <div class="logo-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <span class="logo-text">Админ-панель</span>
+      </a>
+      <div class="head-actions">
+        <a class="btn" href="/"><i class="fa-solid fa-house"></i> На сайт</a>
+        <button class="btn primary" id="btnLogout"><i class="fa-solid fa-right-from-bracket"></i> Выйти</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="title-row">
+      <h1>Управление платформой</h1>
+      <p id="adminEmail">Загрузка...</p>
+    </section>
+
+    <section class="stats-grid">
+      <div class="stat-card"><div class="stat-title">Организаций</div><div class="stat-value" id="statOrgs">0</div></div>
+      <div class="stat-card"><div class="stat-title">Отзывов всего</div><div class="stat-value" id="statReviews">0</div></div>
+      <div class="stat-card"><div class="stat-title">Опубликовано</div><div class="stat-value" id="statVisible">0</div></div>
+      <div class="stat-card"><div class="stat-title">Скрыто</div><div class="stat-value" id="statHidden">0</div></div>
+    </section>
+
+    <section class="section">
+      <h2><i class="fa-solid fa-user-gear"></i> Смена логина и пароля админа</h2>
+      <form id="adminCredForm" class="form-grid">
+        <div class="form-group">
+          <label for="adminCurrentPassword">Текущий пароль</label>
+          <input id="adminCurrentPassword" type="password" required />
+        </div>
+        <div class="form-group">
+          <label for="adminNewEmail">Новый логин (email)</label>
+          <input id="adminNewEmail" type="email" placeholder="admin@admin.admin" />
+        </div>
+        <div class="form-group">
+          <label for="adminNewPassword">Новый пароль</label>
+          <input id="adminNewPassword" type="password" placeholder="Минимум 6 символов" />
+        </div>
+        <div class="form-group full actions">
+          <button class="btn primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Сохранить</button>
+          <span class="muted">Можно изменить только логин, только пароль или оба сразу.</span>
+        </div>
+      </form>
+      <div class="msg" id="adminCredMsg"></div>
+    </section>
+
+    <section class="section">
+      <h2><i class="fa-solid fa-users"></i> Управление пользователями</h2>
+      <div class="msg" id="usersMsg"></div>
+      <div class="users-list" id="usersList"></div>
+    </section>
+
+    <section class="grid-2">
+      <div class="section">
+        <h2><i class="fa-solid fa-building"></i> Управление организациями</h2>
+        <form id="orgForm" class="form-grid">
+          <input type="hidden" id="orgId" />
+          <input type="hidden" id="orgLogoData" />
+          <div class="form-group">
+            <label for="orgName">Название</label>
+            <input id="orgName" type="text" required />
+          </div>
+          <div class="form-group">
+            <label for="orgCategory">Категория</label>
+            <input id="orgCategory" type="text" required />
+          </div>
+          <div class="form-group full">
+            <label for="orgDescription">Описание</label>
+            <textarea id="orgDescription"></textarea>
+          </div>
+          <div class="form-group full">
+            <label for="orgContacts">Контакты</label>
+            <textarea id="orgContacts" placeholder="Телефон, адрес, сайт"></textarea>
+          </div>
+          <div class="form-group full">
+            <label for="orgLogo">Логотип (изображение)</label>
+            <input id="orgLogo" type="file" accept="image/*" />
+          </div>
+          <div class="form-group full actions">
+            <button class="btn primary" type="submit" id="orgSubmitBtn"><i class="fa-solid fa-plus"></i> Добавить организацию</button>
+            <button class="btn" type="button" id="orgCancelEdit" style="display:none"><i class="fa-solid fa-xmark"></i> Отменить редактирование</button>
+          </div>
+        </form>
+        <div class="msg" id="orgMsg"></div>
+
+        <div class="org-list" id="orgList"></div>
+      </div>
+
+      <div class="section">
+        <h2><i class="fa-solid fa-comments"></i> Управление отзывами</h2>
+        <div class="form-group">
+          <label for="reviewOrgFilter">Фильтр по организации</label>
+          <select id="reviewOrgFilter">
+            <option value="">Все организации</option>
+          </select>
+        </div>
+        <div class="msg" id="reviewMsg"></div>
+        <div class="review-list" id="reviewList"></div>
+      </div>
+    </section>
+
+    <section class="grid-2">
+      <div class="section">
+        <h2><i class="fa-solid fa-chart-pie"></i> Средний рейтинг по категориям</h2>
+        <div class="chart-list" id="categoryStats"></div>
+      </div>
+
+      <div class="section">
+        <h2><i class="fa-solid fa-chart-column"></i> График отзывов по дням</h2>
+        <div class="chart-list" id="reviewsChart"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      organizations: [],
+      reviews: [],
+      users: [],
+      overview: null,
+      editingOrgId: null,
+    };
+
+    const els = {
+      adminEmail: document.getElementById('adminEmail'),
+      statOrgs: document.getElementById('statOrgs'),
+      statReviews: document.getElementById('statReviews'),
+      statVisible: document.getElementById('statVisible'),
+      statHidden: document.getElementById('statHidden'),
+
+      adminCredForm: document.getElementById('adminCredForm'),
+      adminCurrentPassword: document.getElementById('adminCurrentPassword'),
+      adminNewEmail: document.getElementById('adminNewEmail'),
+      adminNewPassword: document.getElementById('adminNewPassword'),
+      adminCredMsg: document.getElementById('adminCredMsg'),
+
+      usersList: document.getElementById('usersList'),
+      usersMsg: document.getElementById('usersMsg'),
+
+      orgForm: document.getElementById('orgForm'),
+      orgId: document.getElementById('orgId'),
+      orgName: document.getElementById('orgName'),
+      orgCategory: document.getElementById('orgCategory'),
+      orgDescription: document.getElementById('orgDescription'),
+      orgContacts: document.getElementById('orgContacts'),
+      orgLogo: document.getElementById('orgLogo'),
+      orgLogoData: document.getElementById('orgLogoData'),
+      orgSubmitBtn: document.getElementById('orgSubmitBtn'),
+      orgCancelEdit: document.getElementById('orgCancelEdit'),
+      orgMsg: document.getElementById('orgMsg'),
+      orgList: document.getElementById('orgList'),
+
+      reviewOrgFilter: document.getElementById('reviewOrgFilter'),
+      reviewList: document.getElementById('reviewList'),
+      reviewMsg: document.getElementById('reviewMsg'),
+
+      categoryStats: document.getElementById('categoryStats'),
+      reviewsChart: document.getElementById('reviewsChart'),
+
+      btnLogout: document.getElementById('btnLogout'),
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function showMsg(el, text, isError = false) {
+      el.textContent = text;
+      el.className = `msg show ${isError ? 'error' : 'ok'}`;
+      setTimeout(() => el.className = 'msg', 3500);
+    }
+
+    async function api(url, options = {}) {
+      const res = await fetch(url, {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        ...options,
+      });
+
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
+
+      if (!res.ok) {
+        const error = new Error(data.error || `HTTP ${res.status}`);
+        error.status = res.status;
+        throw error;
+      }
+
+      return data;
+    }
+
+    async function ensureAdmin() {
+      try {
+        const data = await api('/api/admin/me');
+        els.adminEmail.textContent = `Вход выполнен как: ${data.admin.email}`;
+      } catch (err) {
+        window.location.href = '/login';
+        throw err;
+      }
+    }
+
+    async function loadOverview() {
+      state.overview = await api('/api/admin/overview');
+      els.statOrgs.textContent = state.overview.organizations_total;
+      els.statReviews.textContent = state.overview.reviews_total;
+      els.statVisible.textContent = state.overview.visible_reviews;
+      els.statHidden.textContent = state.overview.hidden_reviews;
+
+      renderCategoryStats();
+      renderReviewsChart();
+    }
+
+    async function loadOrganizations() {
+      state.organizations = await api('/api/admin/organizations');
+      renderOrganizations();
+      renderReviewFilterOptions();
+    }
+
+    async function loadUsers() {
+      state.users = await api('/api/admin/users');
+      renderUsers();
+    }
+
+    async function loadReviews() {
+      const orgId = els.reviewOrgFilter.value;
+      const query = orgId ? `?organization_id=${encodeURIComponent(orgId)}` : '';
+      state.reviews = await api(`/api/admin/reviews${query}`);
+      renderReviews();
+    }
+
+    function renderOrganizations() {
+      if (!state.organizations.length) {
+        els.orgList.innerHTML = '<div class="muted">Список организаций пуст.</div>';
+        return;
+      }
+
+      els.orgList.innerHTML = state.organizations.map(org => `
+        <div class="card">
+          <div class="org-top">
+            <div class="org-name">${escapeHtml(org.name)}</div>
+            <div class="actions">
+              <button class="btn" type="button" onclick="startEditOrg(${org.id})"><i class="fa-solid fa-pen"></i> Редактировать</button>
+              <button class="btn" type="button" onclick="deleteOrg(${org.id})"><i class="fa-solid fa-trash"></i> Удалить</button>
+            </div>
+          </div>
+          <div class="meta">Категория: ${escapeHtml(org.category)}</div>
+          <div class="meta">Рейтинг: ${org.avg_rating ?? '—'} | Отзывов: ${org.reviews_total} | Скрыто: ${org.hidden_reviews}</div>
+          <div class="meta">Контакты: ${escapeHtml(org.contacts || '—')}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderReviewFilterOptions() {
+      const current = els.reviewOrgFilter.value;
+      const options = ['<option value="">Все организации</option>']
+        .concat(state.organizations.map(org => `<option value="${org.id}">${escapeHtml(org.name)}</option>`));
+      els.reviewOrgFilter.innerHTML = options.join('');
+      els.reviewOrgFilter.value = current;
+    }
+
+    function renderReviews() {
+      if (!state.reviews.length) {
+        els.reviewList.innerHTML = '<div class="muted">Отзывы не найдены.</div>';
+        return;
+      }
+
+      els.reviewList.innerHTML = state.reviews.map(rv => `
+        <div class="card">
+          <div class="review-header">
+            <div>
+              <div><strong>${escapeHtml(rv.organization_name)}</strong> • ${escapeHtml(rv.user_name)} • ${rv.rating}/5</div>
+              <div class="meta">${formatDate(rv.created_at)}</div>
+            </div>
+            <div class="badge ${rv.is_hidden ? 'hidden' : 'visible'}">
+              <i class="fa-solid ${rv.is_hidden ? 'fa-eye-slash' : 'fa-eye'}"></i>
+              ${rv.is_hidden ? 'Скрыт' : 'Опубликован'}
+            </div>
+          </div>
+          <div class="review-text">${escapeHtml(rv.text)}</div>
+
+          <div class="actions">
+            <button class="btn" type="button" onclick="toggleReviewVisibility(${rv.id}, ${rv.is_hidden ? 'false' : 'true'})">
+              <i class="fa-solid ${rv.is_hidden ? 'fa-eye' : 'fa-eye-slash'}"></i>
+              ${rv.is_hidden ? 'Публиковать' : 'Скрыть'}
+            </button>
+            <button class="btn" type="button" onclick="deleteReviewAdmin(${rv.id})">
+              <i class="fa-solid fa-trash"></i> Удалить
+            </button>
+          </div>
+
+          <div class="reply-box">
+            <label for="reply-${rv.id}">Ответ от имени организации</label>
+            <textarea id="reply-${rv.id}" placeholder="Введите ответ...">${escapeHtml(rv.admin_reply || '')}</textarea>
+            <div class="actions">
+              <button class="btn primary" type="button" onclick="saveReply(${rv.id})"><i class="fa-solid fa-reply"></i> Сохранить ответ</button>
+              ${rv.admin_reply_at ? `<span class="muted">Последнее обновление: ${formatDate(rv.admin_reply_at)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderUsers() {
+      if (!state.users.length) {
+        els.usersList.innerHTML = '<div class="muted">Пользователи не найдены.</div>';
+        return;
+      }
+
+      els.usersList.innerHTML = state.users.map(user => `
+        <div class="card">
+          <div class="org-top">
+            <div class="org-name">${escapeHtml(user.username)}</div>
+            <div class="badge ${user.is_blacklisted ? 'hidden' : 'visible'}">
+              <i class="fa-solid ${user.is_blacklisted ? 'fa-ban' : 'fa-check'}"></i>
+              ${user.is_blacklisted ? 'В чёрном списке' : 'Активен'}
+            </div>
+          </div>
+          <div class="meta">Email: ${escapeHtml(user.email)}</div>
+          <div class="meta">Отзывов: ${Number(user.reviews_count) || 0}</div>
+          <div class="meta">Регистрация: ${formatDate(user.created_at)}</div>
+          <div class="actions">
+            <button class="btn" type="button" onclick="toggleUserBlacklist(${user.id}, ${user.is_blacklisted ? 'false' : 'true'})">
+              <i class="fa-solid ${user.is_blacklisted ? 'fa-user-check' : 'fa-user-slash'}"></i>
+              ${user.is_blacklisted ? 'Убрать из ЧС' : 'В чёрный список'}
+            </button>
+            <button class="btn" type="button" onclick="deleteUserAdmin(${user.id})">
+              <i class="fa-solid fa-trash"></i> Удалить
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderCategoryStats() {
+      const rows = state.overview?.avg_by_category || [];
+      if (!rows.length) {
+        els.categoryStats.innerHTML = '<div class="muted">Нет данных.</div>';
+        return;
+      }
+
+      const max = Math.max(...rows.map(r => Number(r.avg_rating) || 0), 1);
+      els.categoryStats.innerHTML = rows.map(r => {
+        const value = Number(r.avg_rating) || 0;
+        const width = Math.max(5, (value / max) * 100);
+        return `
+          <div class="chart-row">
+            <div>${escapeHtml(r.category)}</div>
+            <div class="bar"><span style="width:${width}%"></span></div>
+            <div>${value.toFixed(2)} (${r.reviews_count})</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderReviewsChart() {
+      const rows = state.overview?.reviews_by_day || [];
+      if (!rows.length) {
+        els.reviewsChart.innerHTML = '<div class="muted">Нет данных.</div>';
+        return;
+      }
+
+      const max = Math.max(...rows.map(r => Number(r.reviews_count) || 0), 1);
+      els.reviewsChart.innerHTML = rows.map(r => {
+        const count = Number(r.reviews_count) || 0;
+        const width = Math.max(4, (count / max) * 100);
+        return `
+          <div class="chart-row">
+            <div>${escapeHtml(r.day)}</div>
+            <div class="bar"><span style="width:${width}%"></span></div>
+            <div>${count}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function clearOrgForm() {
+      state.editingOrgId = null;
+      els.orgId.value = '';
+      els.orgName.value = '';
+      els.orgCategory.value = '';
+      els.orgDescription.value = '';
+      els.orgContacts.value = '';
+      els.orgLogo.value = '';
+      els.orgLogoData.value = '';
+      els.orgSubmitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Добавить организацию';
+      els.orgCancelEdit.style.display = 'none';
+    }
+
+    window.startEditOrg = function startEditOrg(id) {
+      const org = state.organizations.find(item => item.id === id);
+      if (!org) return;
+
+      state.editingOrgId = id;
+      els.orgId.value = String(id);
+      els.orgName.value = org.name || '';
+      els.orgCategory.value = org.category || '';
+      els.orgDescription.value = org.description || '';
+      els.orgContacts.value = org.contacts || '';
+      els.orgLogoData.value = org.logo_data || '';
+      els.orgSubmitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Сохранить изменения';
+      els.orgCancelEdit.style.display = 'inline-flex';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.deleteOrg = async function deleteOrg(id) {
+      if (!confirm('Удалить организацию и все связанные отзывы/фото?')) return;
+      try {
+        await api(`/api/admin/organization/${id}`, { method: 'DELETE' });
+        showMsg(els.orgMsg, 'Организация удалена');
+        await refreshAll();
+      } catch (err) {
+        showMsg(els.orgMsg, err.message, true);
+      }
+    };
+
+    window.toggleReviewVisibility = async function toggleReviewVisibility(id, hidden) {
+      try {
+        await api(`/api/admin/review/${id}/visibility`, {
+          method: 'PATCH',
+          body: JSON.stringify({ hidden }),
+        });
+        await refreshAll({ keepReviewsOnly: true });
+      } catch (err) {
+        showMsg(els.reviewMsg, err.message, true);
+      }
+    };
+
+    window.deleteReviewAdmin = async function deleteReviewAdmin(id) {
+      if (!confirm('Удалить этот отзыв?')) return;
+      try {
+        await api(`/api/admin/review/${id}`, { method: 'DELETE' });
+        await refreshAll({ keepReviewsOnly: true });
+      } catch (err) {
+        showMsg(els.reviewMsg, err.message, true);
+      }
+    };
+
+    window.saveReply = async function saveReply(id) {
+      const textarea = document.getElementById(`reply-${id}`);
+      const reply_text = textarea?.value?.trim() || '';
+      try {
+        await api(`/api/admin/review/${id}/reply`, {
+          method: 'PATCH',
+          body: JSON.stringify({ reply_text }),
+        });
+        showMsg(els.reviewMsg, 'Ответ сохранён');
+        await refreshAll({ keepReviewsOnly: true });
+      } catch (err) {
+        showMsg(els.reviewMsg, err.message, true);
+      }
+    };
+
+    window.toggleUserBlacklist = async function toggleUserBlacklist(id, blacklisted) {
+      try {
+        await api(`/api/admin/user/${id}/blacklist`, {
+          method: 'PATCH',
+          body: JSON.stringify({ blacklisted }),
+        });
+        showMsg(els.usersMsg, 'Статус пользователя обновлён');
+        await loadUsers();
+      } catch (err) {
+        showMsg(els.usersMsg, err.message, true);
+      }
+    };
+
+    window.deleteUserAdmin = async function deleteUserAdmin(id) {
+      if (!confirm('Удалить пользователя и все его отзывы?')) return;
+      try {
+        await api(`/api/admin/user/${id}`, { method: 'DELETE' });
+        showMsg(els.usersMsg, 'Пользователь удалён');
+        await refreshAll();
+      } catch (err) {
+        showMsg(els.usersMsg, err.message, true);
+      }
+    };
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function onSubmitOrganization(e) {
+      e.preventDefault();
+
+      const payload = {
+        name: els.orgName.value.trim(),
+        category: els.orgCategory.value.trim(),
+        description: els.orgDescription.value.trim(),
+        contacts: els.orgContacts.value.trim(),
+        logo_data: els.orgLogoData.value || '',
+      };
+
+      const file = els.orgLogo.files[0];
+      if (file) {
+        if (!file.type.startsWith('image/')) {
+          showMsg(els.orgMsg, 'Логотип должен быть изображением', true);
+          return;
+        }
+        payload.logo_data = await fileToDataUrl(file);
+      }
+
+      try {
+        if (state.editingOrgId) {
+          await api(`/api/admin/organization/${state.editingOrgId}`, {
+            method: 'PUT',
+            body: JSON.stringify(payload),
+          });
+          showMsg(els.orgMsg, 'Организация обновлена');
+        } else {
+          await api('/api/admin/organization', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          });
+          showMsg(els.orgMsg, 'Организация добавлена');
+        }
+
+        clearOrgForm();
+        await refreshAll();
+      } catch (err) {
+        showMsg(els.orgMsg, err.message, true);
+      }
+    }
+
+    async function onSubmitAdminCredentials(e) {
+      e.preventDefault();
+
+      try {
+        const result = await api('/api/admin/credentials', {
+          method: 'PATCH',
+          body: JSON.stringify({
+            current_password: els.adminCurrentPassword.value,
+            new_email: els.adminNewEmail.value.trim(),
+            new_password: els.adminNewPassword.value.trim(),
+          }),
+        });
+
+        els.adminCurrentPassword.value = '';
+        els.adminNewEmail.value = '';
+        els.adminNewPassword.value = '';
+        els.adminEmail.textContent = `Вход выполнен как: ${result.email}`;
+        showMsg(els.adminCredMsg, 'Данные админа обновлены');
+      } catch (err) {
+        showMsg(els.adminCredMsg, err.message, true);
+      }
+    }
+
+    async function refreshAll(options = {}) {
+      if (options.keepReviewsOnly) {
+        await Promise.all([loadReviews(), loadOverview(), loadOrganizations(), loadUsers()]);
+        return;
+      }
+      await Promise.all([loadOverview(), loadOrganizations(), loadReviews(), loadUsers()]);
+    }
+
+    async function logout() {
+      await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+      window.location.href = '/login';
+    }
+
+    function formatDate(raw) {
+      if (!raw) return '—';
+      const date = new Date(raw);
+      if (Number.isNaN(date.getTime())) return raw;
+      return date.toLocaleString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
+    async function init() {
+      await ensureAdmin();
+
+      els.adminCredForm.addEventListener('submit', onSubmitAdminCredentials);
+      els.orgForm.addEventListener('submit', onSubmitOrganization);
+      els.orgCancelEdit.addEventListener('click', clearOrgForm);
+      els.reviewOrgFilter.addEventListener('change', loadReviews);
+      els.btnLogout.addEventListener('click', logout);
+
+      await refreshAll();
+    }
+
+    window.addEventListener('pageshow', async event => {
+      if (!event.persisted) return;
+      try {
+        await ensureAdmin();
+      } catch {}
+    });
+
+    init();
+  </script>
+</body>
+</html>

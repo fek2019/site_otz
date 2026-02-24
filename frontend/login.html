@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Вход — Народный рейтинг</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #6C63FF;
+      --primary-dark: #5A52D5;
+      --accent: #FF6584;
+      --bg: #F7F8FC;
+      --surface: #fff;
+      --text: #1A1A2E;
+      --muted: #7B7F9E;
+      --border: #EAECF4;
+      --transition: .28s cubic-bezier(.4,0,.2,1);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(108,99,255,.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(255,101,132,.10) 0%, transparent 60%);
+    }
+
+    .card {
+      width: 100%;
+      max-width: 450px;
+      background: var(--surface);
+      border-radius: 22px;
+      box-shadow: 0 20px 60px rgba(108,99,255,.15);
+      padding: 34px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-decoration: none;
+      margin-bottom: 22px;
+      color: var(--text);
+    }
+
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+    }
+
+    .logo-text { font-size: 20px; font-weight: 800; }
+
+    .tabs {
+      display: flex;
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      flex: 1;
+      height: 38px;
+      border: none;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .tab.active {
+      background: #fff;
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(108,99,255,.12);
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .form-group { margin-bottom: 14px; }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      height: 46px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 0 14px;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(108,99,255,.12);
+    }
+
+    .btn {
+      width: 100%;
+      height: 48px;
+      border: none;
+      border-radius: 10px;
+      font: inherit;
+      font-weight: 800;
+      color: #fff;
+      cursor: pointer;
+      margin-top: 8px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      box-shadow: 0 6px 20px rgba(108,99,255,.35);
+      transition: var(--transition);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 32px rgba(108,99,255,.45);
+    }
+
+    .error {
+      display: none;
+      margin-bottom: 14px;
+      background: #FFE5E9;
+      color: #D63050;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .error.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <a class="logo" href="/">
+      <div class="logo-icon"><i class="fa-solid fa-star"></i></div>
+      <span class="logo-text">Народный рейтинг</span>
+    </a>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="login">Вход</button>
+      <button class="tab" data-tab="register">Регистрация</button>
+    </div>
+
+    <div class="error" id="errorMsg"></div>
+
+    <div class="panel active" id="panel-login">
+      <form id="loginForm">
+        <div class="form-group">
+          <label class="form-label" for="loginEmail">Email</label>
+          <input class="form-control" type="email" id="loginEmail" placeholder="you@example.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="loginPassword">Пароль</label>
+          <input class="form-control" type="password" id="loginPassword" placeholder="Введите пароль" required />
+        </div>
+        <button class="btn" type="submit">Войти</button>
+      </form>
+    </div>
+
+    <div class="panel" id="panel-register">
+      <form id="registerForm">
+        <div class="form-group">
+          <label class="form-label" for="regUsername">Имя</label>
+          <input class="form-control" type="text" id="regUsername" placeholder="Ваше имя" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="regEmail">Email</label>
+          <input class="form-control" type="email" id="regEmail" placeholder="you@example.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="regPassword">Пароль</label>
+          <input class="form-control" type="password" id="regPassword" placeholder="Минимум 6 символов" required />
+        </div>
+        <button class="btn" type="submit">Зарегистрироваться</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab, .panel').forEach(el => el.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`panel-${tab.dataset.tab}`).classList.add('active');
+        hideError();
+      });
+    });
+
+    function showError(message) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = message;
+      el.classList.add('show');
+    }
+
+    function hideError() {
+      document.getElementById('errorMsg').classList.remove('show');
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      hideError();
+
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: document.getElementById('loginEmail').value.trim(),
+          password: document.getElementById('loginPassword').value,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || 'Ошибка входа');
+        return;
+      }
+
+      window.location.href = data.is_admin ? '/admin' : '/profile';
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      hideError();
+
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          username: document.getElementById('regUsername').value.trim(),
+          email: document.getElementById('regEmail').value.trim(),
+          password: document.getElementById('regPassword').value,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || 'Ошибка регистрации');
+        return;
+      }
+
+      window.location.href = '/profile';
+    });
+  </script>
+</body>
+</html>
