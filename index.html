@@ -1,0 +1,2072 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Народный рейтинг</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <style>
+    /* ============================================================
+       RESET & BASE
+    ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:        #6C63FF;
+      --primary-light:  #EAE8FF;
+      --primary-dark:   #5A52D5;
+      --accent:         #FF6584;
+      --accent2:        #43D9AD;
+      --gold:           #FFB800;
+      --bg:             #F7F8FC;
+      --surface:        #FFFFFF;
+      --text:           #1A1A2E;
+      --text-muted:     #7B7F9E;
+      --border:         #EAECF4;
+      --shadow-sm:      0 2px 8px rgba(108,99,255,.08);
+      --shadow-md:      0 8px 32px rgba(108,99,255,.14);
+      --shadow-lg:      0 20px 60px rgba(108,99,255,.20);
+      --radius:         16px;
+      --radius-sm:      10px;
+      --transition:     .28s cubic-bezier(.4,0,.2,1);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ============================================================
+       ANIMATED GRADIENT BACKGROUND
+    ============================================================ */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(108,99,255,.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(255,101,132,.10) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 50% 50%,  rgba(67,217,173,.06) 0%, transparent 70%);
+      animation: bgShift 12s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes bgShift {
+      0%   { opacity: 1;   transform: scale(1); }
+      100% { opacity: .85; transform: scale(1.08); }
+    }
+
+    /* ============================================================
+       FLOATING PARTICLES
+    ============================================================ */
+    .particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0;
+      animation: floatUp linear infinite;
+    }
+
+    @keyframes floatUp {
+      0%   { transform: translateY(100vh) scale(0);   opacity: 0; }
+      10%  { opacity: .35; }
+      90%  { opacity: .15; }
+      100% { transform: translateY(-120px) scale(1.2); opacity: 0; }
+    }
+
+    /* ============================================================
+       SCROLLBAR
+    ============================================================ */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 99px; }
+
+    /* ============================================================
+       HEADER
+    ============================================================ */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255,255,255,.82);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 24px rgba(108,99,255,.08);
+      transition: box-shadow var(--transition);
+    }
+
+    .header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    /* Logo */
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 18px;
+      box-shadow: 0 4px 12px rgba(108,99,255,.4);
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+
+    .logo:hover .logo-icon {
+      transform: rotate(-8deg) scale(1.1);
+      box-shadow: 0 8px 24px rgba(108,99,255,.5);
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -.3px;
+      white-space: nowrap;
+    }
+
+    /* Search */
+    .search-wrap {
+      flex: 1;
+      max-width: 480px;
+      position: relative;
+    }
+
+    .search-wrap i {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 15px;
+      transition: color var(--transition);
+    }
+
+    #searchInput {
+      width: 100%;
+      height: 44px;
+      border: 2px solid var(--border);
+      border-radius: 99px;
+      padding: 0 16px 0 44px;
+      font-family: inherit;
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+    }
+
+    #searchInput:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(108,99,255,.12);
+      background: #fff;
+    }
+
+    #searchInput:focus ~ i,
+    .search-wrap:focus-within i { color: var(--primary); }
+
+    /* Add review button */
+    .btn-add-review {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 44px;
+      padding: 0 22px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: 99px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(108,99,255,.35);
+      transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .btn-add-review::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.25), transparent);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+
+    .btn-add-review:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(108,99,255,.45);
+    }
+
+    .btn-add-review:hover::after { opacity: 1; }
+    .btn-add-review:active { transform: translateY(0); }
+
+    /* ============================================================
+       HERO SECTION
+    ============================================================ */
+    .hero {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 72px 24px 56px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 99px;
+      margin-bottom: 20px;
+      animation: fadeSlideDown .6s ease both;
+    }
+
+    .hero h1 {
+      font-size: clamp(32px, 5vw, 56px);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -1px;
+      margin-bottom: 18px;
+      animation: fadeSlideDown .7s ease both;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 17px;
+      color: var(--text-muted);
+      max-width: 520px;
+      margin: 0 auto 36px;
+      line-height: 1.6;
+      animation: fadeSlideDown .8s ease both;
+    }
+
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+      animation: fadeSlideDown .9s ease both;
+    }
+
+    .hero-stat {
+      text-align: center;
+    }
+
+    .hero-stat-num {
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-stat-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    @keyframes fadeSlideDown {
+      from { opacity: 0; transform: translateY(-24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============================================================
+       MAIN LAYOUT
+    ============================================================ */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ============================================================
+       TOOLBAR: Categories + Sort
+    ============================================================ */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+    }
+
+    /* Categories */
+    .categories {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .cat-btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      height: 40px;
+      padding: 0 18px;
+      border: 2px solid var(--border);
+      border-radius: 99px;
+      background: var(--surface);
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cat-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+
+    .cat-btn span, .cat-btn i { position: relative; z-index: 1; }
+
+    .cat-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .cat-btn.active {
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(108,99,255,.35);
+      transform: translateY(-1px);
+    }
+
+    .cat-btn.active::before { opacity: 1; }
+
+    /* Sort */
+    .sort-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sort-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    #sortSelect {
+      height: 40px;
+      padding: 0 16px;
+      border: 2px solid var(--border);
+      border-radius: 99px;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--surface);
+      cursor: pointer;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237B7F9E' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+
+    #sortSelect:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(108,99,255,.12);
+    }
+
+    /* ============================================================
+       SECTION TITLE
+    ============================================================ */
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .section-title h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .count-badge {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 4px 12px;
+      border-radius: 99px;
+    }
+
+    /* ============================================================
+       CARDS GRID
+    ============================================================ */
+    #cardsGrid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    @media (max-width: 1024px) { #cardsGrid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px)  { #cardsGrid { grid-template-columns: 1fr; } }
+
+    /* ============================================================
+       CARD
+    ============================================================ */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      cursor: default;
+      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+      position: relative;
+      overflow: hidden;
+      animation: cardIn .5s ease both;
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(30px) scale(.97); }
+      to   { opacity: 1; transform: translateY(0)    scale(1); }
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform var(--transition);
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
+      border-color: rgba(108,99,255,.2);
+    }
+
+    .card:hover::before { transform: scaleX(1); }
+
+    /* Card top row */
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .card-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+      transition: transform var(--transition);
+    }
+
+    .card:hover .card-icon { transform: rotate(-8deg) scale(1.1); }
+
+    .card-title-block { flex: 1; }
+
+    .card-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+
+    .card-category {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 3px 10px;
+      border-radius: 99px;
+    }
+
+    /* Rating */
+    .card-rating {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .rating-num {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .rating-right { display: flex; flex-direction: column; gap: 2px; }
+
+    .stars { display: flex; gap: 2px; }
+
+    .star {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .star.filled  { color: var(--gold); }
+    .star.half    { color: var(--gold); }
+    .star.empty   { color: #D1D5E8; }
+
+    .rating-count {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Preview */
+    /* Preview */
+    .card-preview {
+     font-size: 14px;  
+     color: var(--text-muted);
+     line-height: 1.55;
+     overflow: hidden;
+     display: -webkit-box;
+     -webkit-box-orient: vertical;
+     -webkit-line-clamp: 2;   /* для старых Safari/Chrome */
+     line-clamp: 2;            /* современный стандарт */
+     border-left: 3px solid var(--primary-light);
+     padding-left: 12px;
+    }
+
+
+    /* Card footer */
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+    }
+
+    .reviews-count {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .reviews-count i { color: var(--primary); font-size: 14px; }
+
+    .btn-read {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 18px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: none;
+      border-radius: 99px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-read:hover {
+      background: var(--primary);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(108,99,255,.3);
+    }
+
+    /* ============================================================
+       EMPTY STATE
+    ============================================================ */
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 80px 20px;
+      animation: cardIn .4s ease both;
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .empty-state h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .empty-state p  { font-size: 14px; color: var(--text-muted); }
+
+    /* ============================================================
+       PAGINATION
+    ============================================================ */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin-top: 48px;
+      flex-wrap: wrap;
+    }
+
+    .page-btn {
+      width: 40px;
+      height: 40px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition);
+    }
+
+    .page-btn:hover:not(:disabled) {
+      border-color: var(--primary);
+      color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .page-btn.active {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(108,99,255,.35);
+    }
+
+    .page-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+    /* ============================================================
+       MODAL BASE
+    ============================================================ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26,26,46,.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition);
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--surface);
+      border-radius: 24px;
+      box-shadow: var(--shadow-lg);
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: translateY(40px) scale(.96);
+      transition: transform var(--transition);
+      position: relative;
+    }
+
+    .modal-overlay.open .modal {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-header {
+      padding: 28px 32px 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      z-index: 1;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-title-block { flex: 1; }
+    .modal-title { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+    .modal-subtitle { font-size: 14px; color: var(--text-muted); }
+
+    .modal-close {
+      width: 36px; height: 36px;
+      border: none; border-radius: 10px;
+      background: var(--bg);
+      color: var(--text-muted);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all var(--transition);
+      flex-shrink: 0;
+    }
+
+    .modal-close:hover { background: #FFE5E9; color: var(--accent); transform: rotate(90deg); }
+
+    .modal-body { padding: 24px 32px 32px; }
+
+    /* ============================================================
+       ADD REVIEW MODAL
+    ============================================================ */
+    #addReviewModal .modal { max-width: 520px; }
+
+    .form-group { margin-bottom: 20px; }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .form-control {
+      width: 100%;
+      height: 46px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0 16px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(108,99,255,.12);
+      background: #fff;
+    }
+
+    textarea.form-control {
+      height: 120px;
+      padding: 14px 16px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    /* Star picker */
+    .star-picker {
+      display: flex;
+      gap: 6px;
+    }
+
+    .star-pick {
+      font-size: 32px;
+      cursor: pointer;
+      color: #D1D5E8;
+      transition: color var(--transition), transform var(--transition);
+      line-height: 1;
+      user-select: none;
+    }
+
+    .star-pick:hover { transform: scale(1.2); }
+    .star-pick.lit   { color: var(--gold); }
+
+    /* Submit btn */
+    .btn-submit {
+      width: 100%;
+      height: 52px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 6px 20px rgba(108,99,255,.35);
+      transition: transform var(--transition), box-shadow var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-submit::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.2), transparent);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(108,99,255,.45); }
+    .btn-submit:hover::after { opacity: 1; }
+    .btn-submit:active { transform: translateY(0); }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      background: #1A1A2E;
+      color: #fff;
+      padding: 14px 22px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--shadow-lg);
+      z-index: 9999;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all .4s cubic-bezier(.4,0,.2,1);
+    }
+
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast i { color: var(--accent2); font-size: 18px; }
+
+    /* ============================================================
+       REVIEWS MODAL
+    ============================================================ */
+    #reviewsModal .modal { max-width: 680px; }
+
+    .org-summary {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--primary-light), rgba(255,101,132,.06));
+      border-radius: var(--radius-sm);
+      margin-bottom: 24px;
+    }
+
+    .org-summary-icon {
+      width: 64px; height: 64px;
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    .org-summary-info { flex: 1; }
+    .org-summary-name { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+    .org-summary-cat  { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+
+    .org-summary-rating {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .org-summary-num {
+      font-size: 36px;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Reviews list */
+    .reviews-list { display: flex; flex-direction: column; gap: 16px; }
+
+    .review-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+      transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+      position: relative;
+      overflow: hidden;
+      animation: cardIn .4s ease both;
+    }
+
+    .review-item::before {
+      content: '"';
+      position: absolute;
+      top: -8px; right: 16px;
+      font-size: 80px;
+      font-family: Georgia, serif;
+      color: var(--primary-light);
+      line-height: 1;
+    }
+
+    .review-item:hover {
+      border-color: rgba(108,99,255,.25);
+      box-shadow: var(--shadow-sm);
+      transform: translateX(4px);
+    }
+
+    .review-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .review-author-block { display: flex; align-items: center; gap: 10px; }
+
+    .review-avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    /* ============================================================
+   AUTOCOMPLETE
+============================================================ */
+.autocomplete-wrap {
+  position: relative;
+}
+
+.autocomplete-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0; right: 0;
+  background: var(--surface);
+  border: 2px solid var(--primary);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  z-index: 50;
+  max-height: 220px;
+  overflow-y: auto;
+  display: none;
+  animation: cardIn .2s ease both;
+}
+
+.autocomplete-list.open { display: block; }
+
+.ac-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+  border-bottom: 1px solid var(--border);
+}
+
+.ac-item:last-child { border-bottom: none; }
+
+.ac-item:hover, .ac-item.focused {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.ac-item-icon { font-size: 18px; flex-shrink: 0; }
+
+.ac-item-info { flex: 1; }
+.ac-item-name { font-weight: 600; line-height: 1.3; }
+.ac-item-cat  { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+.ac-item-new {
+  color: var(--accent2);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* New org notice badge */
+.new-org-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(67,217,173,.12), rgba(67,217,173,.04));
+  border: 1px solid rgba(67,217,173,.35);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: #2aaa88;
+  margin-bottom: 14px;
+}
+
+.new-org-notice i { font-size: 16px; }
+
+
+    .review-author { font-size: 14px; font-weight: 600; }
+    .review-date   { font-size: 12px; color: var(--text-muted); }
+    .review-text   { font-size: 14px; color: var(--text); line-height: 1.6; }
+
+    /* ============================================================
+       CATEGORY COLOR THEMES
+    ============================================================ */
+    [data-cat="Клиники"]         { --cat: #6C63FF; --cat-bg: #EAE8FF; }
+    [data-cat="Автосервисы"]     { --cat: #FF6584; --cat-bg: #FFE5EB; }
+    [data-cat="Салоны красоты"]  { --cat: #43D9AD; --cat-bg: #DFF9F2; }
+    [data-cat="Рестораны"]       { --cat: #FF9A3C; --cat-bg: #FFF3E5; }
+    [data-cat="Магазины"]        { --cat: #5B8DEF; --cat-bg: #E7EFFE; }
+    [data-cat="Другое"]          { --cat: #7B7F9E; --cat-bg: #F0F1F7; } /* ← добавить */
+
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+    @media (max-width: 768px) {
+      .header-inner { padding: 0 16px; gap: 12px; }
+      .logo-text    { display: none; }
+      .modal-header { padding: 20px 20px 16px; }
+      .modal-body   { padding: 20px; }
+      .org-summary  { flex-direction: column; text-align: center; }
+      .hero         { padding: 48px 16px 40px; }
+      .hero-stats   { gap: 24px; }
+    }
+
+    @media (max-width: 480px) {
+      .toolbar { flex-direction: column; align-items: flex-start; }
+      .btn-add-review span { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════ PARTICLES ══════════════ -->
+  <div class="particles" id="particles"></div>
+
+  <!-- ══════════════ HEADER ══════════════ -->
+  <header>
+    <div class="header-inner">
+      <a class="logo" href="#">
+        <div class="logo-icon"><i class="fa-solid fa-star"></i></div>
+        <span class="logo-text">Народный рейтинг</span>
+      </a>
+
+      <div class="search-wrap">
+        <input type="text" id="searchInput" placeholder="Поиск организаций…" autocomplete="off" />
+        <i class="fa-solid fa-magnifying-glass"></i>
+      </div>
+
+      <button class="btn-add-review" id="openAddReview">
+        <i class="fa-solid fa-plus"></i>
+        <span>Добавить отзыв</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ══════════════ HERO ══════════════ -->
+  <section class="hero">
+    <div class="hero-badge"><i class="fa-solid fa-fire"></i> Реальные отзывы, реальные люди</div>
+    <h1>Найдите лучшее<br /><span>в вашем городе</span></h1>
+    <p>Читайте честные отзывы, делитесь своим опытом и помогайте другим делать правильный выбор</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num" id="statOrgs">0</div>
+        <div class="hero-stat-label">Организаций</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num" id="statReviews">0</div>
+        <div class="hero-stat-label">Отзывов</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num" id="statCategories">0</div>
+        <div class="hero-stat-label">Категорий</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ MAIN ══════════════ -->
+  <main class="container">
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="categories" id="categories"></div>
+      <div class="sort-wrap">
+        <span class="sort-label"><i class="fa-solid fa-arrow-up-wide-short"></i> Сортировка:</span>
+        <select id="sortSelect">
+          <option value="default">По умолчанию</option>
+          <option value="rating-desc">Рейтинг: высокий</option>
+          <option value="rating-asc">Рейтинг: низкий</option>
+          <option value="reviews-desc">Больше отзывов</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Section title -->
+    <div class="section-title">
+      <h2 id="sectionTitle">Все организации</h2>
+      <span class="count-badge" id="countBadge">0 организаций</span>
+    </div>
+
+    <!-- Cards -->
+    <div id="cardsGrid"></div>
+
+    <!-- Pagination -->
+    <div class="pagination" id="pagination"></div>
+  </main>
+
+  <!-- ══════════════ MODAL: ADD REVIEW ══════════════ -->
+  <div class="modal-overlay" id="addReviewModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addReviewTitle">
+      <div class="modal-header">
+        <div class="modal-title-block">
+          <div class="modal-title" id="addReviewTitle">✍️ Добавить отзыв</div>
+          <div class="modal-subtitle">Поделитесь своим опытом с другими</div>
+        </div>
+        <button class="modal-close" id="closeAddReview" aria-label="Закрыть"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="reviewForm" novalidate>
+          <!-- БЫЛО: <div class="form-group"> ... <select id="orgSelect"> ... -->
+<!-- СТАЛО: -->
+
+<div class="form-group">
+  <label class="form-label" for="orgNameInput">
+    <i class="fa-solid fa-building"></i> Организация
+  </label>
+  <!-- Обёртка с автодополнением -->
+  <div class="autocomplete-wrap" id="autocompleteWrap">
+    <input
+      class="form-control"
+      type="text"
+      id="orgNameInput"
+      placeholder="Введите название организации…"
+      autocomplete="off"
+      required
+    />
+    <!-- Выпадающий список подсказок -->
+    <div class="autocomplete-list" id="autocompleteList"></div>
+  </div>
+  <!-- Скрытый input — хранит id выбранной или -1 для новой -->
+  <input type="hidden" id="orgIdHidden" value="" />
+</div>
+
+<!-- Блок "новая организация" — появляется если организация не найдена -->
+<div class="form-group new-org-block" id="newOrgBlock" style="display:none">
+  <div class="new-org-notice">
+    <i class="fa-solid fa-circle-plus"></i>
+    Организация будет добавлена в каталог автоматически
+  </div>
+  <label class="form-label" for="newOrgCategory">
+    <i class="fa-solid fa-tag"></i> Категория организации
+  </label>
+  <select class="form-control" id="newOrgCategory">
+    <option value="">— Выберите категорию —</option>
+    <option value="Клиники">🏥 Клиники</option>
+    <option value="Автосервисы">🔧 Автосервисы</option>
+    <option value="Салоны красоты">💅 Салоны красоты</option>
+    <option value="Рестораны">🍽️ Рестораны</option>
+    <option value="Магазины">🛒 Магазины</option>
+    <option value="Другое">🏢 Другое</option>
+  </select>
+</div>
+
+          <div class="form-group">
+            <label class="form-label" for="authorName"><i class="fa-solid fa-user"></i> Ваше имя</label>
+            <input class="form-control" type="text" id="authorName" placeholder="Иван Петров" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-star"></i> Оценка</label>
+            <div class="star-picker" id="starPicker">
+              <span class="star-pick" data-val="1">★</span>
+              <span class="star-pick" data-val="2">★</span>
+              <span class="star-pick" data-val="3">★</span>
+              <span class="star-pick" data-val="4">★</span>
+              <span class="star-pick" data-val="5">★</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reviewText"><i class="fa-solid fa-comment"></i> Текст отзыва</label>
+            <textarea class="form-control" id="reviewText" placeholder="Расскажите о своём опыте…" required></textarea>
+          </div>
+          <button type="submit" class="btn-submit">
+            <i class="fa-solid fa-paper-plane"></i> Отправить отзыв
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MODAL: REVIEWS ══════════════ -->
+  <div class="modal-overlay" id="reviewsModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reviewsModalTitle">
+      <div class="modal-header">
+        <div class="modal-title-block">
+          <div class="modal-title" id="reviewsModalTitle">Отзывы</div>
+          <div class="modal-subtitle" id="reviewsModalSubtitle"></div>
+        </div>
+        <button class="modal-close" id="closeReviews" aria-label="Закрыть"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="org-summary" id="orgSummary"></div>
+        <div class="reviews-list" id="reviewsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ TOAST ══════════════ -->
+  <div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i> <span id="toastMsg"></span></div>
+
+  <!-- ══════════════ JAVASCRIPT ══════════════ -->
+  <script>
+  (() => {
+    'use strict';
+
+    /* ─────────────────────────────────────────
+       CONSTANTS
+    ───────────────────────────────────────── */
+    const ITEMS_PER_PAGE = 6;
+
+    /* ─────────────────────────────────────────
+       CATEGORY META (icon + colors)
+    ───────────────────────────────────────── */
+   const CAT_META = {
+  'Клиники':        { icon: '🏥', color: '#6C63FF', bg: '#EAE8FF' },
+  'Автосервисы':    { icon: '🔧', color: '#FF6584', bg: '#FFE5EB' },
+  'Салоны красоты': { icon: '💅', color: '#43D9AD', bg: '#DFF9F2' },
+  'Рестораны':      { icon: '🍽️', color: '#FF9A3C', bg: '#FFF3E5' },
+  'Магазины':       { icon: '🛒', color: '#5B8DEF', bg: '#E7EFFE' },
+  'Другое':         { icon: '🏢', color: '#7B7F9E', bg: '#F0F1F7' }, // ← добавить
+};
+
+
+    /* Avatar colors for reviewers */
+    const AVATAR_COLORS = ['#6C63FF','#FF6584','#43D9AD','#FF9A3C','#5B8DEF','#A259FF','#F24E1E'];
+
+    /* ─────────────────────────────────────────
+       DEFAULT DATA
+    ───────────────────────────────────────── */
+    const DEFAULT_ORGANIZATIONS = [
+      {
+        id: 1, name: 'Клиника Здоровье', category: 'Клиники',
+        previewText: 'Отличные врачи, современное оборудование и приятный персонал.',
+        reviews: [
+          { id: 1, author: 'Анна К.',    date: '12.01.2025', rating: 5, text: 'Отличные врачи! Быстро поставили диагноз, все объяснили. Буду обращаться снова.' },
+          { id: 2, author: 'Михаил Р.',  date: '05.02.2025', rating: 3, text: 'Долго ждал приёма — около часа. Врач хороший, но запись не соответствовала времени.' },
+          { id: 3, author: 'Светлана В.', date: '20.02.2025', rating: 5, text: 'Прекрасная клиника! Чистота, вежливость, профессионализм. Всем рекомендую.' },
+        ],
+      },
+      {
+        id: 2, name: 'Стоматология на Ленина', category: 'Клиники',
+        previewText: 'Современные технологии и безболезненное лечение.',
+        reviews: [
+          { id: 1, author: 'Дмитрий С.', date: '08.01.2025', rating: 5, text: 'Лечили зуб без боли! Доктор Ирина Сергеевна — мастер своего дела.' },
+          { id: 2, author: 'Ольга П.',   date: '14.03.2025', rating: 4, text: 'Цены немного выше среднего, но качество соответствует. Ребёнку не было страшно.' },
+        ],
+      },
+      {
+        id: 3, name: 'Автосервис Умелец', category: 'Автосервисы',
+        previewText: 'Починили быстро и качественно, приятно удивили сроками.',
+        reviews: [
+          { id: 1, author: 'Алексей Г.', date: '03.03.2025', rating: 4, text: 'Починили быстро — за день заменили подвеску. Объяснили что и почему.' },
+          { id: 2, author: 'Ирина М.',   date: '17.03.2025', rating: 3, text: 'Дороговато по сравнению с другими, но работа сделана аккуратно.' },
+          { id: 3, author: 'Сергей Д.',  date: '25.03.2025', rating: 5, text: 'Отличный сервис! Машина работает как новая. Вернусь снова.' },
+        ],
+      },
+      {
+        id: 4, name: 'АвтоМастер Плюс', category: 'Автосервисы',
+        previewText: 'Диагностика бесплатно при любом ремонте.',
+        reviews: [
+          { id: 1, author: 'Павел Н.',   date: '01.02.2025', rating: 4, text: 'Сделали бесплатную диагностику и нашли реальную проблему. Честные ребята.' },
+          { id: 2, author: 'Наталья Ф.', date: '22.02.2025', rating: 2, text: 'Пришлось ждать 3 дня, хотя обещали за один. Больше не приеду.' },
+        ],
+      },
+      {
+        id: 5, name: 'Бьюти-студия Мария', category: 'Салоны красоты',
+        previewText: 'Лучший мастер! Маникюр держится уже третью неделю.',
+        reviews: [
+          { id: 1, author: 'Екатерина Л.', date: '10.01.2025', rating: 5, text: 'Лучший мастер маникюра в городе! Держится уже три недели. Рекомендую.' },
+          { id: 2, author: 'Юлия К.',      date: '19.02.2025', rating: 5, text: 'Очень уютно, приятная атмосфера. Мастер Мария — просто волшебница!' },
+          { id: 3, author: 'Вера С.',       date: '01.03.2025', rating: 4, text: 'Хорошая студия, но запись за 2 недели — это многовато.' },
+        ],
+      },
+      {
+        id: 6, name: 'Салон Glamour', category: 'Салоны красоты',
+        previewText: 'Окрашивание волос профессиональными красками L\'Oréal.',
+        reviews: [
+          { id: 1, author: 'Марина Ж.', date: '14.02.2025', rating: 5, text: 'Покрасили волосы — результат потрясающий! Цвет именно тот, что хотела.' },
+          { id: 2, author: 'Алина Т.',  date: '28.02.2025', rating: 3, text: 'Средне. Ожидала большего за такую цену.' },
+        ],
+      },
+      {
+        id: 7, name: 'Ресторан Уют', category: 'Рестораны',
+        previewText: 'Уютная атмосфера, вкусная кухня и приятные цены.',
+        reviews: [
+          { id: 1, author: 'Антон Б.',  date: '20.01.2025', rating: 5, text: 'Отмечали день рождения — всё прошло отлично! Вкусно, красиво, персонал внимательный.' },
+          { id: 2, author: 'Людмила Ш.', date: '05.02.2025', rating: 4, text: 'Хорошее место для семейного ужина. Детское меню понравилось ребёнку.' },
+          { id: 3, author: 'Роман К.',  date: '12.03.2025', rating: 5, text: 'Лучший стейк в городе! Буду возвращаться снова и снова.' },
+        ],
+      },
+      {
+        id: 8, name: 'Кафе Восток', category: 'Рестораны',
+        previewText: 'Настоящая восточная кухня в самом центре города.',
+        reviews: [
+          { id: 1, author: 'Тимур А.',  date: '07.02.2025', rating: 5, text: 'Плов как дома у мамы! Порции большие, цены адекватные.' },
+          { id: 2, author: 'Наталья Б.', date: '15.03.2025', rating: 4, text: 'Хорошая кухня, но шумновато в выходные.' },
+        ],
+      },
+      {
+        id: 9, name: 'Супермаркет Близко', category: 'Магазины',
+        previewText: 'Всё необходимое рядом с домом, свежие продукты каждый день.',
+        reviews: [
+          { id: 1, author: 'Галина П.',  date: '25.01.2025', rating: 4, text: 'Удобно расположен, свежие овощи и фрукты. Касс побольше бы.' },
+          { id: 2, author: 'Виктор Н.',  date: '10.02.2025', rating: 3, text: 'Цены чуть выше среднего, но выбор хороший.' },
+        ],
+      },
+      {
+        id: 10, name: 'Электроника MaxTech', category: 'Магазины',
+        previewText: 'Широкий выбор техники с гарантией и консультацией.',
+        reviews: [
+          { id: 1, author: 'Иван Р.',    date: '14.01.2025', rating: 5, text: 'Купил ноутбук — помогли выбрать, всё объяснили. Отличный сервис!' },
+          { id: 2, author: 'Марина С.',  date: '28.01.2025', rating: 4, text: 'Хороший магазин, но очередь на кассе бывает.' },
+          { id: 3, author: 'Денис Ф.',   date: '19.03.2025', rating: 5, text: 'Сервисный центр при магазине — очень удобно. Починили телефон за 2 часа.' },
+        ],
+      },
+    ];
+
+    /* ─────────────────────────────────────────
+       STATE
+    ───────────────────────────────────────── */
+    let state = {
+      organizations: [],   // loaded from localStorage or defaults
+      activeCategory: 'Все',
+      searchQuery: '',
+      sortMode: 'default',
+      currentPage: 1,
+      pickedRating: 0,
+    };
+
+    /* ─────────────────────────────────────────
+       LOCALSTORAGE HELPERS
+    ───────────────────────────────────────── */
+    /**
+     * Сохраняем организации (с их отзывами) в localStorage.
+     */
+    function saveToStorage() {
+      localStorage.setItem('nr_organizations', JSON.stringify(state.organizations));
+    }
+
+    /**
+     * Загружаем из localStorage или используем дефолтные данные.
+     * При загрузке пересчитываем rating и reviewsCount.
+     */
+    function loadFromStorage() {
+      const raw = localStorage.getItem('nr_organizations');
+      if (raw) {
+        state.organizations = JSON.parse(raw);
+      } else {
+        // Клонируем дефолтные данные и рассчитываем рейтинги
+        state.organizations = DEFAULT_ORGANIZATIONS.map(org => ({
+          ...org,
+          reviews: [...org.reviews],
+        }));
+      }
+      // Всегда пересчитываем рейтинг из отзывов
+      state.organizations.forEach(recalcOrg);
+    }
+
+    /**
+     * Пересчитывает средний рейтинг и кол-во отзывов для организации.
+     */
+    function recalcOrg(org) {
+      org.reviewsCount = org.reviews.length;
+      if (org.reviews.length === 0) {
+        org.rating = 0;
+        return;
+      }
+      const sum = org.reviews.reduce((acc, r) => acc + r.rating, 0);
+      org.rating = Math.round((sum / org.reviews.length) * 10) / 10;
+    }
+
+    /* ─────────────────────────────────────────
+       FILTERING & SORTING
+    ───────────────────────────────────────── */
+    function getFilteredOrgs() {
+      let list = [...state.organizations];
+
+      // Filter by category
+      if (state.activeCategory !== 'Все') {
+        list = list.filter(o => o.category === state.activeCategory);
+      }
+
+      // Filter by search
+      if (state.searchQuery) {
+        const q = state.searchQuery.toLowerCase();
+        list = list.filter(o => o.name.toLowerCase().includes(q));
+      }
+
+      // Sort
+      switch (state.sortMode) {
+        case 'rating-desc':  list.sort((a, b) => b.rating - a.rating); break;
+        case 'rating-asc':   list.sort((a, b) => a.rating - b.rating); break;
+        case 'reviews-desc': list.sort((a, b) => b.reviewsCount - a.reviewsCount); break;
+      }
+
+      return list;
+    }
+
+    /* ─────────────────────────────────────────
+       STARS RENDER HELPER
+    ───────────────────────────────────────── */
+    /**
+     * Возвращает HTML строку со звёздами для данного рейтинга.
+     */
+    function starsHTML(rating, size = 14) {
+      let html = '';
+      for (let i = 1; i <= 5; i++) {
+        if (rating >= i)       html += `<span class="star filled" style="font-size:${size}px">★</span>`;
+        else if (rating >= i - .5) html += `<span class="star half"   style="font-size:${size}px">★</span>`;
+        else                   html += `<span class="star empty"  style="font-size:${size}px">★</span>`;
+      }
+      return html;
+    }
+
+    /* ─────────────────────────────────────────
+       RENDER CATEGORIES
+    ───────────────────────────────────────── */
+    function renderCategories() {
+      const wrap = document.getElementById('categories');
+      const cats = ['Все', ...Object.keys(CAT_META)];
+      wrap.innerHTML = cats.map(cat => {
+        const isAll = cat === 'Все';
+        const icon  = isAll ? '🌟' : CAT_META[cat].icon;
+        return `
+          <button class="cat-btn ${state.activeCategory === cat ? 'active' : ''}"
+                  data-category="${cat}">
+            <span>${icon}</span> <span>${cat}</span>
+          </button>`;
+      }).join('');
+
+      wrap.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.activeCategory = btn.dataset.category;
+          state.currentPage = 1;
+          render();
+        });
+      });
+    }
+
+    /* ─────────────────────────────────────────
+       RENDER CARDS
+    ───────────────────────────────────────── */
+    function renderCards() {
+      const grid      = document.getElementById('cardsGrid');
+      const filtered  = getFilteredOrgs();
+      const total     = filtered.length;
+      const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+
+      // Clamp current page
+      if (state.currentPage > totalPages && totalPages > 0) state.currentPage = totalPages;
+
+      // Paginate
+      const start = (state.currentPage - 1) * ITEMS_PER_PAGE;
+      const page  = filtered.slice(start, start + ITEMS_PER_PAGE);
+
+      // Update section title & count badge
+      document.getElementById('sectionTitle').textContent =
+        state.activeCategory === 'Все' ? 'Все организации' : state.activeCategory;
+      document.getElementById('countBadge').textContent =
+        `${total} ${pluralOrg(total)}`;
+
+      if (page.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <span class="empty-icon">🔍</span>
+            <h3>Ничего не найдено</h3>
+            <p>Попробуйте изменить запрос или выбрать другую категорию</p>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = page.map((org, idx) => {
+        const meta = CAT_META[org.category] || {};
+        return `
+          <div class="card" data-id="${org.id}" style="animation-delay:${idx * .07}s" data-cat="${org.category}">
+            <div class="card-top">
+              <div class="card-icon" style="background:${meta.bg};color:${meta.color}">
+                ${meta.icon}
+              </div>
+              <div class="card-title-block">
+                <div class="card-name">${org.name}</div>
+                <div class="card-category" style="background:${meta.bg};color:${meta.color}">
+                  ${meta.icon} ${org.category}
+                </div>
+              </div>
+            </div>
+
+            <div class="card-rating">
+              <div class="rating-num">${org.rating.toFixed(1)}</div>
+              <div class="rating-right">
+                <div class="stars">${starsHTML(org.rating)}</div>
+                <div class="rating-count">${org.reviewsCount} ${pluralReview(org.reviewsCount)}</div>
+              </div>
+            </div>
+
+            <div class="card-preview">${org.previewText}</div>
+
+            <div class="card-footer">
+              <div class="reviews-count">
+                <i class="fa-regular fa-comment"></i>
+                ${org.reviewsCount} ${pluralReview(org.reviewsCount)}
+              </div>
+              <button class="btn-read" data-id="${org.id}">
+                Читать <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>`;
+      }).join('');
+
+      // Bind read-reviews buttons
+      grid.querySelectorAll('.btn-read').forEach(btn => {
+        btn.addEventListener('click', () => openReviewsModal(+btn.dataset.id));
+      });
+    }
+
+    /* ─────────────────────────────────────────
+       RENDER PAGINATION
+    ───────────────────────────────────────── */
+    function renderPagination() {
+      const wrap    = document.getElementById('pagination');
+      const total   = getFilteredOrgs().length;
+      const pages   = Math.ceil(total / ITEMS_PER_PAGE);
+
+      if (pages <= 1) { wrap.innerHTML = ''; return; }
+
+      let html = `
+        <button class="page-btn" id="pgPrev" ${state.currentPage === 1 ? 'disabled' : ''}>
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>`;
+
+      for (let p = 1; p <= pages; p++) {
+        html += `<button class="page-btn ${p === state.currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
+      }
+
+      html += `
+        <button class="page-btn" id="pgNext" ${state.currentPage === pages ? 'disabled' : ''}>
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>`;
+
+      wrap.innerHTML = html;
+
+      document.getElementById('pgPrev').addEventListener('click', () => {
+        if (state.currentPage > 1) { state.currentPage--; render(); scrollToTop(); }
+      });
+      document.getElementById('pgNext').addEventListener('click', () => {
+        if (state.currentPage < pages) { state.currentPage++; render(); scrollToTop(); }
+      });
+      wrap.querySelectorAll('[data-page]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.currentPage = +btn.dataset.page;
+          render();
+          scrollToTop();
+        });
+      });
+    }
+
+    function scrollToTop() {
+      document.querySelector('main').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    /* ─────────────────────────────────────────
+       HERO STATS (animated counter)
+    ───────────────────────────────────────── */
+    function animateCounter(el, target, duration = 1200) {
+      const start  = performance.now();
+      const update = (now) => {
+        const progress = Math.min((now - start) / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        el.textContent = Math.round(ease * target);
+        if (progress < 1) requestAnimationFrame(update);
+        else el.textContent = target;
+      };
+      requestAnimationFrame(update);
+    }
+
+    function updateHeroStats() {
+      const totalOrgs    = state.organizations.length;
+      const totalReviews = state.organizations.reduce((a, o) => a + o.reviewsCount, 0);
+      const totalCats    = Object.keys(CAT_META).length;
+      animateCounter(document.getElementById('statOrgs'),       totalOrgs);
+      animateCounter(document.getElementById('statReviews'),    totalReviews);
+      animateCounter(document.getElementById('statCategories'), totalCats);
+    }
+
+    /* ─────────────────────────────────────────
+       MAIN RENDER
+    ───────────────────────────────────────── */
+    function render() {
+      renderCategories();
+      renderCards();
+      renderPagination();
+    }
+
+    /* ─────────────────────────────────────────
+       MODAL HELPERS
+    ───────────────────────────────────────── */
+    function openModal(id) {
+      const el = document.getElementById(id);
+      el.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      el.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    // Close on overlay click
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay) closeModal(overlay.id);
+      });
+    });
+
+    // Escape key
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.open').forEach(o => closeModal(o.id));
+      }
+    });
+
+    /* ─────────────────────────────────────────
+       ADD REVIEW MODAL
+    ───────────────────────────────────────── */
+    /* ─────────────────────────────────────────
+   ADD REVIEW MODAL — autocomplete + new org
+───────────────────────────────────────── */
+
+const orgNameInput    = document.getElementById('orgNameInput');
+const orgIdHidden     = document.getElementById('orgIdHidden');
+const autocompleteList = document.getElementById('autocompleteList');
+const newOrgBlock     = document.getElementById('newOrgBlock');
+const newOrgCategory  = document.getElementById('newOrgCategory');
+
+// Open modal
+document.getElementById('openAddReview').addEventListener('click', () => {
+  resetOrgField();
+  openModal('addReviewModal');
+});
+
+// Close modal
+document.getElementById('closeAddReview').addEventListener('click', () => {
+  closeModal('addReviewModal');
+});
+
+/** Сбрасывает поле организации в начальное состояние */
+function resetOrgField() {
+  orgNameInput.value  = '';
+  orgIdHidden.value   = '';
+  autocompleteList.classList.remove('open');
+  autocompleteList.innerHTML = '';
+  newOrgBlock.style.display  = 'none';
+  newOrgCategory.value = '';
+}
+
+/** Показывает/скрывает блок "новая организация" */
+function toggleNewOrgBlock(show) {
+  newOrgBlock.style.display = show ? 'block' : 'none';
+  if (!show) newOrgCategory.value = '';
+}
+
+/** Строит выпадающий список автодополнения */
+function buildAutocomplete(query) {
+  autocompleteList.innerHTML = '';
+
+  if (!query) {
+    autocompleteList.classList.remove('open');
+    toggleNewOrgBlock(false);
+    return;
+  }
+
+  const q       = query.toLowerCase();
+  const matches = state.organizations.filter(o =>
+    o.name.toLowerCase().includes(q)
+  );
+
+  // Существующие совпадения
+  matches.forEach(org => {
+    const meta = CAT_META[org.category] || { icon: '🏢' };
+    const item = document.createElement('div');
+    item.className = 'ac-item';
+    item.innerHTML = `
+      <span class="ac-item-icon">${meta.icon}</span>
+      <div class="ac-item-info">
+        <div class="ac-item-name">${highlightMatch(org.name, query)}</div>
+        <div class="ac-item-cat">${org.category} · ${org.reviewsCount} ${pluralReview(org.reviewsCount)}</div>
+      </div>`;
+    item.addEventListener('mousedown', () => selectExistingOrg(org));
+    autocompleteList.appendChild(item);
+  });
+
+  // Опция "добавить новую"
+  const addNew = document.createElement('div');
+  addNew.className = 'ac-item';
+  addNew.innerHTML = `
+    <span class="ac-item-icon">➕</span>
+    <div class="ac-item-info">
+      <div class="ac-item-new">Добавить «${query}» как новую организацию</div>
+    </div>`;
+  addNew.addEventListener('mousedown', () => selectNewOrg(query));
+  autocompleteList.appendChild(addNew);
+
+  autocompleteList.classList.add('open');
+}
+
+/** Подсвечивает совпадение в строке */
+function highlightMatch(text, query) {
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return text;
+  return (
+    text.slice(0, idx) +
+    `<mark style="background:var(--primary-light);color:var(--primary);border-radius:3px;padding:0 2px">${text.slice(idx, idx + query.length)}</mark>` +
+    text.slice(idx + query.length)
+  );
+}
+
+/** Выбрать существующую организацию из списка */
+function selectExistingOrg(org) {
+  orgNameInput.value  = org.name;
+  orgIdHidden.value   = org.id;
+  autocompleteList.classList.remove('open');
+  toggleNewOrgBlock(false);
+}
+
+/** Выбрать режим "новая организация" */
+function selectNewOrg(name) {
+  orgNameInput.value = name;
+  orgIdHidden.value  = 'new';           // сигнал — создать новую
+  autocompleteList.classList.remove('open');
+  toggleNewOrgBlock(true);
+}
+
+// Слушаем ввод в поле организации
+orgNameInput.addEventListener('input', () => {
+  orgIdHidden.value = '';               // сброс выбора при редактировании
+  toggleNewOrgBlock(false);
+  buildAutocomplete(orgNameInput.value.trim());
+});
+
+// Закрываем список при потере фокуса
+orgNameInput.addEventListener('blur', () => {
+  setTimeout(() => autocompleteList.classList.remove('open'), 150);
+});
+
+// Открываем список при фокусе если есть текст
+orgNameInput.addEventListener('focus', () => {
+  if (orgNameInput.value.trim()) buildAutocomplete(orgNameInput.value.trim());
+});
+
+/* ── Star picker ── */
+const starPicker = document.getElementById('starPicker');
+starPicker.querySelectorAll('.star-pick').forEach(star => {
+  star.addEventListener('mouseover', () => highlightStars(+star.dataset.val));
+  star.addEventListener('mouseout',  () => highlightStars(state.pickedRating));
+  star.addEventListener('click',     () => {
+    state.pickedRating = +star.dataset.val;
+    highlightStars(state.pickedRating);
+  });
+});
+
+function highlightStars(val) {
+  starPicker.querySelectorAll('.star-pick').forEach(s => {
+    s.classList.toggle('lit', +s.dataset.val <= val);
+  });
+}
+
+/* ── Form submit ── */
+document.getElementById('reviewForm').addEventListener('submit', e => {
+  e.preventDefault();
+
+  const orgName  = orgNameInput.value.trim();
+  const orgIdVal = orgIdHidden.value;
+  const author   = document.getElementById('authorName').value.trim();
+  const text     = document.getElementById('reviewText').value.trim();
+  const rating   = state.pickedRating;
+
+  // Валидация
+  if (!orgName)   return showToast('Введите название организации', true);
+  if (!orgIdVal)  return showToast('Выберите организацию из списка или добавьте новую', true);
+  if (!author)    return showToast('Введите ваше имя', true);
+  if (!rating)    return showToast('Поставьте оценку', true);
+  if (!text)      return showToast('Напишите текст отзыва', true);
+
+  let org;
+
+  if (orgIdVal === 'new') {
+    // ── Создаём новую организацию ──
+    const category = newOrgCategory.value;
+    if (!category) return showToast('Выберите категорию организации', true);
+
+    org = {
+      id:          Date.now(),
+      name:        orgName,
+      category,
+      previewText: text,       // первый отзыв становится превью
+      reviews:     [],
+    };
+    state.organizations.push(org);
+
+  } else {
+    // ── Добавляем к существующей ──
+    org = state.organizations.find(o => o.id === +orgIdVal);
+    if (!org) return showToast('Организация не найдена', true);
+  }
+
+  // Добавляем отзыв
+  org.reviews.push({
+    id:     Date.now() + 1,
+    author,
+    date:   formatDate(new Date()),
+    text,
+    rating,
+  });
+
+  recalcOrg(org);
+  saveToStorage();
+  render();
+  updateHeroStats();
+
+  // Сброс формы
+  e.target.reset();
+  state.pickedRating = 0;
+  highlightStars(0);
+  resetOrgField();
+
+  closeModal('addReviewModal');
+  showToast(orgIdVal === 'new'
+    ? `«${org.name}» добавлена в каталог!`
+    : `Отзыв о «${org.name}» добавлен!`
+  );
+});
+
+
+    /* ─────────────────────────────────────────
+       REVIEWS MODAL
+    ───────────────────────────────────────── */
+    function openReviewsModal(orgId) {
+      const org  = state.organizations.find(o => o.id === orgId);
+      if (!org) return;
+
+      const meta = CAT_META[org.category] || {};
+
+      document.getElementById('reviewsModalTitle').textContent = `Отзывы об организации`;
+      document.getElementById('reviewsModalSubtitle').textContent = org.name;
+
+      // Summary
+      document.getElementById('orgSummary').innerHTML = `
+        <div class="org-summary-icon" style="background:${meta.bg}; font-size:28px">${meta.icon}</div>
+        <div class="org-summary-info">
+          <div class="org-summary-name">${org.name}</div>
+          <div class="org-summary-cat">${org.category}</div>
+          <div class="org-summary-rating">
+            <div class="org-summary-num">${org.rating.toFixed(1)}</div>
+            <div>
+              <div class="stars">${starsHTML(org.rating, 20)}</div>
+              <div style="font-size:13px;color:var(--text-muted)">${org.reviewsCount} ${pluralReview(org.reviewsCount)}</div>
+            </div>
+          </div>
+        </div>`;
+
+      // Reviews list
+      if (org.reviews.length === 0) {
+        document.getElementById('reviewsList').innerHTML =
+          `<div class="empty-state"><span class="empty-icon">📝</span>
+           <h3>Пока нет отзывов</h3><p>Будьте первым!</p></div>`;
+      } else {
+        document.getElementById('reviewsList').innerHTML =
+          [...org.reviews].reverse().map((r, i) => {
+            const avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
+            const initials    = r.author.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+            return `
+              <div class="review-item" style="animation-delay:${i * .08}s">
+                <div class="review-header">
+                  <div class="review-author-block">
+                    <div class="review-avatar" style="background:${avatarColor}">${initials}</div>
+                    <div>
+                      <div class="review-author">${r.author}</div>
+                      <div class="review-date">${r.date}</div>
+                    </div>
+                  </div>
+                  <div class="stars">${starsHTML(r.rating, 16)}</div>
+                </div>
+                <div class="review-text">${r.text}</div>
+              </div>`;
+          }).join('');
+      }
+
+      openModal('reviewsModal');
+    }
+
+    document.getElementById('closeReviews').addEventListener('click', () => closeModal('reviewsModal'));
+
+    /* ─────────────────────────────────────────
+       SEARCH
+    ───────────────────────────────────────── */
+    document.getElementById('searchInput').addEventListener('input', e => {
+      state.searchQuery  = e.target.value.trim();
+      state.currentPage  = 1;
+      render();
+    });
+
+    /* ─────────────────────────────────────────
+       SORT
+    ───────────────────────────────────────── */
+    document.getElementById('sortSelect').addEventListener('change', e => {
+      state.sortMode    = e.target.value;
+      state.currentPage = 1;
+      render();
+    });
+
+    /* ─────────────────────────────────────────
+       TOAST NOTIFICATION
+    ───────────────────────────────────────── */
+    let toastTimer;
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      const icon  = toast.querySelector('i');
+      document.getElementById('toastMsg').textContent = msg;
+      icon.className = isError ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check';
+      icon.style.color = isError ? '#FF6584' : '#43D9AD';
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    /* ─────────────────────────────────────────
+       PARTICLES GENERATOR
+    ───────────────────────────────────────── */
+    function createParticles() {
+      const container = document.getElementById('particles');
+      const colors    = ['#6C63FF', '#FF6584', '#43D9AD', '#FF9A3C', '#5B8DEF'];
+
+      for (let i = 0; i < 18; i++) {
+        const el        = document.createElement('div');
+        const size      = Math.random() * 12 + 5;
+        el.className    = 'particle';
+        el.style.cssText = `
+          width:  ${size}px;
+          height: ${size}px;
+          left:   ${Math.random() * 100}%;
+          background: ${colors[Math.floor(Math.random() * colors.length)]};
+          animation-duration:  ${Math.random() * 18 + 12}s;
+          animation-delay:     ${Math.random() * 15}s;
+        `;
+        container.appendChild(el);
+      }
+    }
+
+    /* ─────────────────────────────────────────
+       UTILS
+    ───────────────────────────────────────── */
+    function formatDate(d) {
+      return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function pluralOrg(n) {
+      const r = n % 10;
+      if (n % 100 >= 11 && n % 100 <= 19) return 'организаций';
+      if (r === 1) return 'организация';
+      if (r >= 2 && r <= 4) return 'организации';
+      return 'организаций';
+    }
+
+    function pluralReview(n) {
+      const r = n % 10;
+      if (n % 100 >= 11 && n % 100 <= 19) return 'отзывов';
+      if (r === 1) return 'отзыв';
+      if (r >= 2 && r <= 4) return 'отзыва';
+      return 'отзывов';
+    }
+
+    /* ─────────────────────────────────────────
+       INIT
+    ───────────────────────────────────────── */
+    function init() {
+      createParticles();
+      loadFromStorage();
+      render();
+      updateHeroStats();
+    }
+
+    init();
+
+  })();
+  </script>
+</body>
+</html>
