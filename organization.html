@@ -180,11 +180,44 @@
       object-fit: cover;
       display: block;
       background: #f1f3fb;
+      cursor: zoom-in;
     }
     .photo-meta {
       padding: 8px 10px;
       font-size: 12px;
       color: var(--text-muted);
+    }
+
+    .photo-viewer {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 11, 20, 0.86);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 9998;
+    }
+    .photo-viewer.open { display: flex; }
+    .photo-viewer img {
+      max-width: min(1200px, 94vw);
+      max-height: 88vh;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .45);
+      background: #fff;
+    }
+    .photo-viewer-close {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      width: 42px;
+      height: 42px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .2);
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
     }
 
     /* Toast */
@@ -227,7 +260,7 @@
       </div>
       <div class="error" id="photoError"></div>
       <div class="photo-upload-row">
-        <input class="form-control" type="file" id="photoInput" accept="image/*" />
+        <input class="form-control" type="file" id="photoInput" accept=".jpg,.jpeg,.png,.webp,.gif" />
         <button class="btn-submit btn-upload-photo" id="btnUploadPhoto" type="button">
           <i class="fa-solid fa-upload"></i> Добавить фото
         </button>
@@ -243,6 +276,13 @@
   <div class="toast" id="toast">
     <i class="fa-solid fa-circle-check"></i>
     <span id="toastMsg"></span>
+  </div>
+
+  <div class="photo-viewer" id="photoViewer" aria-hidden="true">
+    <button class="photo-viewer-close" id="photoViewerClose" type="button" aria-label="Закрыть">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <img id="photoViewerImage" alt="Просмотр фото" />
   </div>
 
   <script>
@@ -271,6 +311,9 @@
     photoInput: document.getElementById('photoInput'),
     btnUploadPhoto: document.getElementById('btnUploadPhoto'),
     photoError: document.getElementById('photoError'),
+    photoViewer: document.getElementById('photoViewer'),
+    photoViewerImage: document.getElementById('photoViewerImage'),
+    photoViewerClose: document.getElementById('photoViewerClose'),
     toast: document.getElementById('toast'),
     toastMsg: document.getElementById('toastMsg')
   };
@@ -291,6 +334,14 @@
 
   async function init() {
     els.btnUploadPhoto.addEventListener('click', uploadPhoto);
+    els.photosGrid.addEventListener('click', onPhotoClick);
+    els.photoViewerClose.addEventListener('click', closePhotoViewer);
+    els.photoViewer.addEventListener('click', event => {
+      if (event.target === els.photoViewer) closePhotoViewer();
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closePhotoViewer();
+    });
     await checkAuth();
     await loadOrganization();
   }
@@ -373,11 +424,31 @@
     els.photosGrid.innerHTML = photos
       .map(photo => `
         <div class="photo-item">
-          <img src="${photo.image_data}" alt="Фото организации" loading="lazy" />
+          <img src="${photo.image_data}" data-src="${photo.image_data}" alt="Фото организации" loading="lazy" />
           <div class="photo-meta">Добавлено: ${formatDate(photo.created_at)}</div>
         </div>
       `)
       .join('');
+  }
+
+  function onPhotoClick(event) {
+    const image = event.target.closest('img[data-src]');
+    if (!image) return;
+    openPhotoViewer(image.dataset.src || image.src);
+  }
+
+  function openPhotoViewer(src) {
+    if (!src) return;
+    els.photoViewerImage.src = src;
+    els.photoViewer.classList.add('open');
+    els.photoViewer.setAttribute('aria-hidden', 'false');
+  }
+
+  function closePhotoViewer() {
+    if (!els.photoViewer.classList.contains('open')) return;
+    els.photoViewer.classList.remove('open');
+    els.photoViewer.setAttribute('aria-hidden', 'true');
+    els.photoViewerImage.src = '';
   }
 
   function renderReviewForm(org) {
@@ -505,12 +576,13 @@
       return;
     }
 
-    const imageData = await toDataUrl(file);
+    const body = new FormData();
+    body.append('photo', file);
+
     const res = await fetch(`/api/organization/${orgId}/photo`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ image_data: imageData })
+      body
     });
 
     const data = await res.json();
@@ -523,15 +595,6 @@
     els.photoInput.value = '';
     showToast('Фото добавлено');
     await loadOrganization();
-  }
-
-  function toDataUrl(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
   }
 
   function renderReviews(reviews) {

@@ -1,12 +1,14 @@
 from flask import Blueprint, jsonify, request, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from extensions import limiter
 from models import get_db
 
 auth_bp = Blueprint('auth', __name__)
 
 
 @auth_bp.route('/api/register', methods=['POST'])
+@limiter.limit('10 per minute')
 def register():
     data = request.get_json(silent=True) or {}
 
@@ -65,6 +67,7 @@ def register():
 
 
 @auth_bp.route('/api/login', methods=['POST'])
+@limiter.limit('15 per minute')
 def login():
     data = request.get_json(silent=True) or {}
 

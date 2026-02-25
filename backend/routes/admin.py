@@ -3,9 +3,13 @@
 from flask import Blueprint, jsonify, request, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from extensions import limiter
+from media_storage import delete_media_url, is_data_url_image, is_media_url, save_data_url_image
 from models import get_db
+from pagination import build_pagination_payload, parse_limit_offset
 
 admin_bp = Blueprint('admin', __name__)
+ADMIN_RATE_LIMIT = '120 per minute'
 
 
 def admin_required(fn):
@@ -18,24 +22,36 @@ def admin_required(fn):
     return wrapper
 
 
-def _is_valid_data_url(value):
-    return bool(value) and value.startswith('data:image/') and ';base64,' in value
+def _prepare_logo_url(value):
+    raw = str(value or '').strip()
+    if not raw:
+        return None
+
+    if is_media_url(raw):
+        return raw
+
+    if not is_data_url_image(raw):
+        raise ValueError('invalid_data_url')
+
+    return save_data_url_image(raw, folder='logos')
 
 
 @admin_bp.route('/api/admin/me', methods=['GET'])
+@limiter.limit(ADMIN_RATE_LIMIT)
 @admin_required
 def admin_me():
     return jsonify({'admin': {'email': session.get('admin_email')}})
 
 
 @admin_bp.route('/api/admin/overview', methods=['GET'])
+@limiter.limit(ADMIN_RATE_LIMIT)
 @admin_required
 def admin_overview():
     conn = get_db()
     try:
-        organizations_total = conn.execute('SELECT COUNT(*) FROM organizations').fetchone()[0]
-        reviews_total = conn.execute('SELECT COUNT(*) FROM reviews').fetchone()[0]
-        visible_reviews = conn.execute('SELECT COUNT(*) FROM reviews WHERE is_hidden = 0').fetchone()[0]
+        organizations_total = int(conn.execute('SELECT COUNT(*) AS total FROM organizations').fetchone()['total'])
+        reviews_total = int(conn.execute('SELECT COUNT(*) AS total FROM reviews').fetchone()['total'])
+        visible_reviews = int(conn.execute('SELECT COUNT(*) AS total FROM reviews WHERE is_hidden = 0').fetchone()['total'])
         hidden_reviews = reviews_total - visible_reviews
 
         avg_by_category = conn.execute(
@@ -78,10 +94,16 @@ def admin_overview():
 
 
 @admin_bp.route('/api/admin/organizations', methods=['GET'])
+@limiter.limit(ADMIN_RATE_LIMIT)
 @admin_required
 def admin_get_organizations():
+    limit, offset = parse_limit_offset(default_limit=20, max_limit=100)
+
     conn = get_db()
     try:
+        total_row = conn.execute('SELECT COUNT(*) AS total FROM organizations').fetchone()
+        total = int(total_row['total']) if total_row else 0
+
         rows = conn.execute(
             '''
             SELECT
@@ -90,7 +112,7 @@ def admin_get_organizations():
                 o.category,
                 o.description,
                 o.contacts,
-                o.logo_data,
+                COALESCE(o.logo_path, o.logo_data) AS logo_data,
                 o.created_at,
                 ROUND(AVG(CASE WHEN r.is_hidden = 0 THEN r.rating END), 1) AS avg_rating,
                 COUNT(r.id)                                                AS reviews_total,
@@ -99,7 +121,9 @@ def admin_get_organizations():
             LEFT JOIN reviews r ON r.organization_id = o.id
             GROUP BY o.id
             ORDER BY o.id DESC
-            '''
+            LIMIT ? OFFSET ?
+            ''',
+            (limit, offset),
         ).fetchall()
 
         result = []
@@ -109,13 +133,19 @@ def admin_get_organizations():
             item['reviews_total'] = item['reviews_total'] or 0
             result.append(item)
 
-        return jsonify(result)
+        return jsonify(
+            {
+                'items': result,
+                'pagination': build_pagination_payload(total, limit, offset),
+            }
+        )
 
     finally:
         conn.close()
 
 
 @admin_bp.route('/api/admin/organization', methods=['POST'])
+@limiter.limit(ADMIN_RATE_LIMIT)
 @admin_required
 def admin_create_organization():
     data = request.get_json(silent=True) or {}
@@ -135,7 +165,11 @@ def admin_create_organization():
     if len(description) > 2000 or len(contacts) > 500:
         return jsonify({'error': 'Описание или контакты слишком длинные'}), 400
 
-    if logo_data and not _is_valid_data_url(logo_data):
+    try:
+        logo_url = _prepare_logo_url(logo_data)
+    except ValueError as exc:
+        if str(exc) == 'file_too_large':
+            return jsonify({'error': 'Логотип слишком большой. Максимум 2 МБ'}), 413
         return jsonify({'error': 'Логотип должен быть data URL изображения'}), 400
 
     conn = get_db()
@@ -147,22 +181,27 @@ def admin_create_organization():
         if existing:
             return jsonify({'error': 'Организация с таким названием уже существует'}), 409
 
-        cursor = conn.execute(
+        conn.execute(
             '''
-            INSERT INTO organizations (name, category, description, contacts, logo_data)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO organizations (name, category, description, contacts, logo_path, logo_data)
+            VALUES (?, ?, ?, ?, ?, NULL)
             ''',
-            (name, category, description, contacts, logo_data or None),
+            (name, category, description, contacts, logo_url),
         )
+        created = conn.execute(
+            'SELECT id FROM organizations WHERE LOWER(name) = LOWER(?) ORDER BY id DESC LIMIT 1',
+            (name,),
+        ).fetchone()
         conn.commit()
 
-        return jsonify({'message': 'Организация добавлена', 'organization_id': cursor.lastrowid}), 201
+        return jsonify({'message': 'Организация добавлена', 'organization_id': created['id'] if created else None}), 201
 
     finally:
         conn.close()
 
 
 @admin_bp.route('/api/admin/organization/<int:org_id>', methods=['PUT'])
+@limiter.limit(ADMIN_RATE_LIMIT)
 @admin_required
 def admin_update_organization(org_id):
     data = request.get_json(silent=True) or {}
@@ -182,12 +221,17 @@ def admin_update_organization(org_id):
     if len(description) > 2000 or len(contacts) > 500:
         return jsonify({'error': 'Описание или контакты слишком длинные'}), 400
 
-    if logo_data and not _is_valid_data_url(logo_data):
+    try:
+        logo_url = _prepare_logo_url(logo_data)
+    except ValueError as exc:
+        if str(exc) == 'file_too_large':
+            return jsonify({'error': 'Логотип слишком большой. Максимум 2 МБ'}), 413
         return jsonify({'error': 'Логотип должен быть data URL изображения'}), 400
 
     conn = get_db()
+    old_logo_to_delete = None
     try:
-        org = conn.execute('SELECT id FROM organizations WHERE id = ?', (org_id,)).fetchone()
+        org = conn.execute('SELECT id, logo_path, logo_data FROM organizations WHERE id = ?', (org_id,)).fetchone()
         if not org:
             return jsonify({'error': 'Организация не найдена'}), 404
 
@@ -198,15 +242,22 @@ def admin_update_organization(org_id):
         if duplicate:
             return jsonify({'error': 'Другая организация уже имеет это название'}), 409
 
+        current_logo = org['logo_path'] or org['logo_data']
+        if current_logo and current_logo != logo_url and is_media_url(current_logo):
+            old_logo_to_delete = current_logo
+
         conn.execute(
             '''
             UPDATE organizations
-            SET name = ?, category = ?, description = ?, contacts = ?, logo_data = ?
+            SET name = ?, category = ?, description = ?, contacts = ?, logo_path = ?, logo_data = NULL
             WHERE id = ?
             ''',
-            (name, category, description, contacts, logo_data or None, org_id),
+            (name, category, description, contacts, logo_url, org_id),
         )
         conn.commit()
+
+        if old_logo_to_delete:
+            delete_media_url(old_logo_to_delete)
 
         return jsonify({'message': 'Организация обновлена'})
 
@@ -215,18 +266,33 @@ def admin_update_organization(org_id):
 
 
 @admin_bp.route('/api/admin/organization/<int:org_id>', methods=['DELETE'])
+@limiter.limit(ADMIN_RATE_LIMIT)
 @admin_required
 def admin_delete_organization(org_id):
     conn = get_db()
+    logo_to_delete = None
+    photo_files = []
     try:
-        org = conn.execute('SELECT id FROM organizations WHERE id = ?', (org_id,)).fetchone()
+        org = conn.execute('SELECT id, logo_path, logo_data FROM organizations WHERE id = ?', (org_id,)).fetchone()
         if not org:
             return jsonify({'error': 'Организация не найдена'}), 404
+
+        logo_to_delete = org['logo_path'] or org['logo_data']
+        photos = conn.execute(
+            'SELECT image_path FROM organization_photos WHERE organization_id = ?',
+            (org_id,),
+        ).fetchall()
+        photo_files = [row['image_path'] for row in photos if row['image_path']]
 
         conn.execute('DELETE FROM organization_photos WHERE organization_id = ?', (org_id,))
         conn.execute('DELETE FROM reviews WHERE organization_id = ?', (org_id,))
         conn.execute('DELETE FROM organizations WHERE id = ?', (org_id,))
         conn.commit()
+
+        if logo_to_delete:
+            delete_media_url(logo_to_delete)
+        for photo_url in photo_files:
+            delete_media_url(photo_url)
 
         return jsonify({'message': 'Организация удалена'})
 
@@ -235,12 +301,15 @@ def admin_delete_organization(org_id):
 
 
 @admin_bp.route('/api/admin/reviews', methods=['GET'])
+@limiter.limit(ADMIN_RATE_LIMIT)
 @admin_required
 def admin_get_reviews():
     org_id = request.args.get('organization_id', '').strip()
+    limit, offset = parse_limit_offset(default_limit=20, max_limit=100)
 
     conn = get_db()
     try:
+        count_query = 'SELECT COUNT(*) AS total FROM reviews r JOIN organizations o ON o.id = r.organization_id'
         query = '''
             SELECT
                 r.id,
@@ -262,23 +331,39 @@ def admin_get_reviews():
         params = []
 
         if org_id:
+            count_query += ' WHERE o.id = ? '
             query += ' WHERE o.id = ? '
             params.append(org_id)
 
-        query += ' ORDER BY r.created_at DESC, r.id DESC '
+        query += ' ORDER BY r.created_at DESC, r.id DESC LIMIT ? OFFSET ? '
+        data_params = params + [limit, offset]
 
-        rows = conn.execute(query, params).fetchall()
-        return jsonify([dict(row) for row in rows])
+        total_row = conn.execute(count_query, params).fetchone()
+        total = int(total_row['total']) if total_row else 0
+
+        rows = conn.execute(query, data_params).fetchall()
+        return jsonify(
+            {
+                'items': [dict(row) for row in rows],
+                'pagination': build_pagination_payload(total, limit, offset),
+            }
+        )
 
     finally:
         conn.close()
 
 
 @admin_bp.route('/api/admin/users', methods=['GET'])
+@limiter.limit(ADMIN_RATE_LIMIT)
 @admin_required
 def admin_get_users():
+    limit, offset = parse_limit_offset(default_limit=20, max_limit=100)
+
     conn = get_db()
     try:
+        total_row = conn.execute('SELECT COUNT(*) AS total FROM users').fetchone()
+        total = int(total_row['total']) if total_row else 0
+
         rows = conn.execute(
             '''
             SELECT
@@ -293,16 +378,24 @@ def admin_get_users():
             LEFT JOIN reviews r ON r.user_id = u.id
             GROUP BY u.id
             ORDER BY u.created_at DESC, u.id DESC
-            '''
+            LIMIT ? OFFSET ?
+            ''',
+            (limit, offset),
         ).fetchall()
 
-        return jsonify([dict(row) for row in rows])
+        return jsonify(
+            {
+                'items': [dict(row) for row in rows],
+                'pagination': build_pagination_payload(total, limit, offset),
+            }
+        )
 
     finally:
         conn.close()
 
 
 @admin_bp.route('/api/admin/user/<int:user_id>/blacklist', methods=['PATCH'])
+@limiter.limit(ADMIN_RATE_LIMIT)
 @admin_required
 def admin_toggle_user_blacklist(user_id):
     data = request.get_json(silent=True) or {}
@@ -332,6 +425,7 @@ def admin_toggle_user_blacklist(user_id):
 
 
 @admin_bp.route('/api/admin/user/<int:user_id>', methods=['DELETE'])
+@limiter.limit(ADMIN_RATE_LIMIT)
 @admin_required
 def admin_delete_user(user_id):
     conn = get_db()
@@ -351,6 +445,7 @@ def admin_delete_user(user_id):
 
 
 @admin_bp.route('/api/admin/review/<int:review_id>/visibility', methods=['PATCH'])
+@limiter.limit(ADMIN_RATE_LIMIT)
 @admin_required
 def admin_set_review_visibility(review_id):
     data = request.get_json(silent=True) or {}
@@ -372,6 +467,7 @@ def admin_set_review_visibility(review_id):
 
 
 @admin_bp.route('/api/admin/review/<int:review_id>/reply', methods=['PATCH'])
+@limiter.limit(ADMIN_RATE_LIMIT)
 @admin_required
 def admin_reply_review(review_id):
     data = request.get_json(silent=True) or {}
@@ -403,6 +499,7 @@ def admin_reply_review(review_id):
 
 
 @admin_bp.route('/api/admin/review/<int:review_id>', methods=['DELETE'])
+@limiter.limit(ADMIN_RATE_LIMIT)
 @admin_required
 def admin_delete_review(review_id):
     conn = get_db()
@@ -421,6 +518,7 @@ def admin_delete_review(review_id):
 
 
 @admin_bp.route('/api/admin/credentials', methods=['PATCH'])
+@limiter.limit(ADMIN_RATE_LIMIT)
 @admin_required
 def admin_change_credentials():
     data = request.get_json(silent=True) or {}

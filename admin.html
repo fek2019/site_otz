@@ -558,6 +558,12 @@
       return data;
     }
 
+    function extractItems(payload) {
+      if (Array.isArray(payload)) return payload;
+      if (Array.isArray(payload?.items)) return payload.items;
+      return [];
+    }
+
     async function ensureAdmin() {
       try {
         const data = await api('/api/admin/me');
@@ -580,20 +586,25 @@
     }
 
     async function loadOrganizations() {
-      state.organizations = await api('/api/admin/organizations');
+      state.organizations = extractItems(await api('/api/admin/organizations?limit=100&offset=0'));
       renderOrganizations();
       renderReviewFilterOptions();
     }
 
     async function loadUsers() {
-      state.users = await api('/api/admin/users');
+      state.users = extractItems(await api('/api/admin/users?limit=100&offset=0'));
       renderUsers();
     }
 
     async function loadReviews() {
       const orgId = els.reviewOrgFilter.value;
-      const query = orgId ? `?organization_id=${encodeURIComponent(orgId)}` : '';
-      state.reviews = await api(`/api/admin/reviews${query}`);
+      const params = new URLSearchParams();
+      params.set('limit', '100');
+      params.set('offset', '0');
+      if (orgId) {
+        params.set('organization_id', orgId);
+      }
+      state.reviews = extractItems(await api(`/api/admin/reviews?${params.toString()}`));
       renderReviews();
     }
 

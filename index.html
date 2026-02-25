@@ -1446,11 +1446,12 @@
 
   async function loadOrganizations() {
     try {
-      const res = await fetch('/api/organizations', { credentials: 'include' });
+      const res = await fetch('/api/organizations?limit=100&offset=0', { credentials: 'include' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
-      state.organizations = Array.isArray(data) ? data.map(normalizeOrg) : [];
+      const items = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []);
+      state.organizations = items.map(normalizeOrg);
       state.currentPage = 1;
       render();
       updateHeroStats();
