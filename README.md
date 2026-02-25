@@ -1,4 +1,4 @@
-# Народный рейтинг (Flask + HTML/CSS/JS)
+﻿# Народный рейтинг (Flask + HTML/CSS/JS)
 
 Веб-приложение каталога организаций с отзывами, модерацией и админ-панелью.
 
@@ -57,6 +57,7 @@ site_otz/
   organization.html
   admin.html
   requirements.txt
+  render.yaml
   README.md
 ```
 
@@ -105,6 +106,25 @@ export DATABASE_URL='postgresql://user:pass@host:5432/dbname'
 gunicorn -w 4 -b 0.0.0.0:5000 backend.wsgi:app
 ```
 
+## Деплой на Render (готово)
+
+В проект добавлен файл `render.yaml`, который поднимает:
+- web service (`site-otz`)
+- PostgreSQL (`site-otz-db`)
+- persistent disk (`/var/data`) для медиа-файлов
+
+Что сделать:
+1. Запушить проект в GitHub.
+2. В Render выбрать `New +` -> `Blueprint` и указать репозиторий.
+3. Подтвердить создание сервисов из `render.yaml`.
+4. После первого деплоя при необходимости обновить `CORS_ORIGINS` под ваш реальный домен Render.
+
+Стартовая команда уже настроена:
+
+```bash
+cd backend && gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+```
+
 ## Основные переменные окружения
 
 - `APP_ENV`: `development` или `production`
@@ -118,6 +138,7 @@ gunicorn -w 4 -b 0.0.0.0:5000 backend.wsgi:app
 - `SESSION_COOKIE_SAMESITE`: `Lax`/`Strict`/`None`
 - `MEDIA_ROOT`: директория хранения фото/логотипов
 - `RATELIMIT_STORAGE_URI`: backend для лимитера (по умолчанию `memory://`)
+- `PYTHON_VERSION`: версия Python для Render (в `render.yaml` задана `3.12.8`)
 
 ## Дефолтный админ
 
